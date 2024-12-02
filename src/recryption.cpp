@@ -23,6 +23,8 @@
 #include <helib/fhe_stats.h>
 #include <helib/log.h>
 
+#ifndef BIGINT_P
+
 #ifdef HELIB_DEBUG
 
 #include <helib/debugging.h>
@@ -1317,3 +1319,5 @@ void fhe_stats_print(long iter, const Context& context)
 #endif
 
 } // namespace helib
+
+#endif

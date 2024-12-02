@@ -129,8 +129,11 @@ private:
   // The structure of Z[X]/(Phi_m(X),p^r).
   PAlgebraMod alMod;
 
+#ifndef BIGINT_P
   // A default EncryptedArray.
   std::shared_ptr<const EncryptedArray> ea;
+  std::shared_ptr<const PowerfulDCRT> pwfl_converter;
+#endif
 
   // These parameters are currently set by buildPrimeChain
   long hwt_param = 0; // Hamming weight of all keys associated with context
@@ -138,7 +141,6 @@ private:
   long e_param = 0;   // parameters specific to bootstrapping
   long ePrime_param = 0;
 
-  std::shared_ptr<const PowerfulDCRT> pwfl_converter;
 
   // The structure of a single slot of the plaintext space.
   // Note, this will be Z[X]/(G(x),p^r) for some irreducible factor G of
@@ -182,9 +184,10 @@ private:
   // Digits of ctxt/columns of key-switching matrix
   std::vector<IndexSet> digits;
 
+#ifndef BIGINT_P
   // Bootstrapping-related data in the context includes both thin and thick
   ThinRecryptData rcData;
-
+#endif
   // Helper for serialisation.
   static SerializableContent readParamsFrom(std::istream& str);
 
@@ -320,6 +323,7 @@ public:
    **/
   long getPrecision() const { return alMod.getR(); }
 
+#ifndef BIGINT_P
   /**
    * @brief Get a powerful converter.
    * @return A powerful converter.
@@ -331,7 +335,7 @@ public:
    * @return A reference to a `std::shared` pointer pointing to a slotRing.
    **/
   const std::shared_ptr<PolyModRing>& getSlotRing() const { return slotRing; };
-
+#endif
   /**
    * @brief Getter method to the index set to the small primes.
    * @return A `const` reference to the index set to the small primes.
@@ -365,6 +369,7 @@ public:
    **/
   const IndexSet& getDigit(long i) const { return digits[i]; }
 
+#ifndef BIGINT_P
   /**
    * @brief Getter method for a recryption data object.
    * @return A `const` reference to the recryption data object.
@@ -378,7 +383,9 @@ public:
    * @note We assume `false` return to be BGV scheme.
    **/
   bool isCKKS() const { return alMod.getTag() == PA_cx_tag; }
-
+#else
+  bool isCKKS() const { return false; }
+#endif
   /**
    * @brief Getter method for the Hamming weight value.
    * @return The Hamming weight value.
@@ -409,6 +416,7 @@ public:
    **/
   const PAlgebraMod& getAlMod() const { return alMod; };
 
+#ifndef BIGINT_P
   /**
    * @brief Getter method returning the default `view` object of the created
    * `context`.
@@ -431,7 +439,7 @@ public:
    * @return A reference to `std::shared_ptr` to the `EncryptedArray` object.
    **/
   const std::shared_ptr<const EncryptedArray>& shareEA() const { return ea; }
-
+#endif
   //======================= high probability bounds ================
 
   // erfc(scale/sqrt(2)) * phi(m) should be less than some negligible
@@ -703,6 +711,7 @@ public:
    * @param alsoThick Flag for initialising additional information needed for
    * thick bootstrapping. Default is true.
    **/
+#ifndef BIGINT_P
   void enableBootStrapping(const NTL::Vec<long>& mvec,
                            bool build_cache = false,
                            bool alsoThick = true)
@@ -713,12 +722,19 @@ public:
 
     rcData.init(*this, mvec, alsoThick, build_cache);
   }
+#endif
 
   /**
    * @brief Check if a `Context` is bootstrappable.
    * @return `true` if recryption data is found, `false` otherwise.
    **/
-  bool isBootstrappable() const { return rcData.alMod != nullptr; }
+  bool isBootstrappable() const {
+#ifndef BIGINT_P
+    return rcData.alMod != nullptr;
+#else
+    return false;
+#endif
+ }
 
   /**
    * @brief Getter method that returns the handles of both the `ctxtPrimes` and
@@ -1078,7 +1094,7 @@ private:
   std::vector<long> gens_;
   std::vector<long> ords_;
   long m_ = default_values::m; // BGV: 3, CKKS: 4
-  NTL::ZZ p_ = default_values::p; // BGV: 2, CKKS: -1
+  NTL::ZZ p_ = NTL::ZZ(default_values::p); // BGV: 2, CKKS: -1
   long r_ = default_values::r; // BGV: Hensel lifting = 1,
                                // CKKS: Precision = 20
   long c_ = 3;

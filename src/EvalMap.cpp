@@ -16,6 +16,8 @@
 #include <NTL/lzz_pXFactoring.h>
 #include <NTL/GF2XFactoring.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 // Forward declarations
@@ -916,3 +918,5 @@ static MatMul1D* buildThinStep1Matrix(const EncryptedArray& ea,
 //! \endcond
 
 } // namespace helib
+
+#endif

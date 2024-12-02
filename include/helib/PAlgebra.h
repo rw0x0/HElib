@@ -27,6 +27,8 @@
 #include <helib/ClonedPtr.h>
 #include <helib/apiAttributes.h>
 
+#define BIGINT_P
+
 namespace helib {
 
 struct half_FFT
@@ -76,17 +78,25 @@ struct quarter_FFT
 class PAlgebra
 {
   long m; // the integer m defines (Z/mZ)^*, Phi_m(X), etc.
+  long phiM;      // phi(m)
+
+  long pow2; // if m = 2^k, then pow2 == k; otherwise, pow2 == 0
+
   NTL::ZZ p; // the prime base of the plaintext space
 
-  long phiM;      // phi(m)
   long ordP;      // the order of p in (Z/mZ)^*
+
+  std::vector<long> zmsIdx; // if t is the i'th element in Zm* then zmsIdx[t]=i
+                            // zmsIdx[t]==-1 if t notin Zm*
+
+  std::vector<long> zmsRep; // inverse of zmsIdx
   long nfactors;  // number of distinct prime factors of m
   long radm;      // rad(m) = prod of distinct primes dividing m
+
+
   double normBnd; // max-norm-on-pwfl-basis <= normBnd * max-norm-canon-embed
   double polyNormBnd; // max-norm-on-poly-basis <= polyNormBnd *
                       // max-norm-canon-embed
-
-  long pow2; // if m = 2^k, then pow2 == k; otherwise, pow2 == 0
 
   std::vector<long> gens; // Our generators for (Z/mZ)^* (other than p)
 
@@ -99,8 +109,6 @@ class PAlgebra
   NTL::Vec<long> frob_perturb;
 
   CubeSignature cube; // the hypercube structure of Zm* /(p)
-
-  NTL::ZZX PhimX; // Holds the integer polynomial Phi_m(X)
 
   double cM; // the "ring constant" c_m for Z[X]/Phi_m(X)
   // NOTE: cM is related to the ratio between the l_infinity norm of
@@ -121,24 +129,23 @@ class PAlgebra
   // for the method RecryptData::setAE in recryption.cpp. Also see
   // Appendix A of https://ia.cr/2014/873 (updated version from 2019)
 
+#ifndef BIGINT_P
   std::vector<long> T;    // The representatives for the quotient group Zm* /(p)
   std::vector<long> Tidx; // i=Tidx[t] is the index i s.t. T[i]=t.
                           // Tidx[t]==-1 if t notin T
+#endif
 
-  std::vector<long> zmsIdx; // if t is the i'th element in Zm* then zmsIdx[t]=i
-                            // zmsIdx[t]==-1 if t notin Zm*
-
-  std::vector<long> zmsRep; // inverse of zmsIdx
 
   std::shared_ptr<PGFFT> fftInfo; // info for computing m-point complex FFT's
                                   // shard_ptr allows delayed initialization
                                   // and lightweight copying
-
   std::shared_ptr<half_FFT> half_fftInfo;
   // an optimization for FFT's with even m
 
   std::shared_ptr<quarter_FFT> quarter_fftInfo;
   // an optimization for FFT's with m = 0 (mod 4)
+
+  NTL::ZZX PhimX; // Holds the integer polynomial Phi_m(X)
 
 public:
   PAlgebra& operator=(const PAlgebra&) = delete;
@@ -163,14 +170,20 @@ public:
   //! Returns m
   long getM() const { return m; }
 
-  //! Returns p
-  NTL::ZZ getP() const { return p; }
-
   //! Returns phi(m)
   long getPhiM() const { return phiM; }
 
+  //! Returns p
+  NTL::ZZ getP() const { return p; }
+
+  //! if m = 2^k, then pow2 == k; otherwise, pow2 == 0
+  long getPow2() const { return pow2; }
+
   //! The order of p in (Z/mZ)^*
   long getOrdP() const { return ordP; }
+
+  //! The cyclotomix polynomial Phi_m(X)
+  const NTL::ZZX& getPhimX() const { return PhimX; }
 
   //! The number of distinct prime factors of m
   long getNFactors() const { return nfactors; }
@@ -186,12 +199,6 @@ public:
 
   //! The number of plaintext slots = phi(m)/ord(p)
   long getNSlots() const { return cube.getSize(); }
-
-  //! if m = 2^k, then pow2 == k; otherwise, pow2 == 0
-  long getPow2() const { return pow2; }
-
-  //! The cyclotomix polynomial Phi_m(X)
-  const NTL::ZZX& getPhimX() const { return PhimX; }
 
   //! The "ring constant" cM
   double get_cM() const { return cM; }
@@ -214,6 +221,18 @@ public:
   // p to the power j mod m
   long frobeniusPow(long j) const;
 
+  //! Returns the index of t in (Z/mZ)*
+  long indexInZmstar(long t) const { return (t > 0 && t < m) ? zmsIdx[t] : -1; }
+
+  //! Returns the index of t in (Z/mZ)* -- no range checking
+  long indexInZmstar_unchecked(long t) const { return zmsIdx[t]; }
+
+  //! Returns rep whose index is i
+  long repInZmstar_unchecked(long idx) const { return zmsRep[idx]; }
+
+  bool inZmStar(long t) const { return (t > 0 && t < m && zmsIdx[t] > -1); }
+
+#ifndef BIGINT_P
   //! The order of i'th generator (if any)
   long OrderOf(long i) const { return cube.getDim(i); }
 
@@ -237,17 +256,6 @@ public:
 
   //! Is t in T?
   bool isRep(long t) const { return (t > 0 && t < m && Tidx[t] > -1); }
-
-  //! Returns the index of t in (Z/mZ)*
-  long indexInZmstar(long t) const { return (t > 0 && t < m) ? zmsIdx[t] : -1; }
-
-  //! Returns the index of t in (Z/mZ)* -- no range checking
-  long indexInZmstar_unchecked(long t) const { return zmsIdx[t]; }
-
-  //! Returns rep whose index is i
-  long repInZmstar_unchecked(long idx) const { return zmsRep[idx]; }
-
-  bool inZmStar(long t) const { return (t > 0 && t < m && zmsIdx[t] > -1); }
 
   //! @brief Returns prod_i gi^{exps[i]} mod m. If onlySameOrd=true,
   //! use only generators that have the same order as in (Z/mZ)^*.
@@ -285,15 +293,18 @@ public:
   {
     return cube.incrementCoords(exps);
   }
-
-  //! The largest FFT we need to handle degree-m polynomials
-  long fftSizeNeeded() const { return NTL::NextPowerOfTwo(getM()) + 1; }
-  // TODO: should have a special case when m is power of two
+#endif
 
   const PGFFT& getFFTInfo() const { return *fftInfo; }
   const half_FFT& getHalfFFTInfo() const { return *half_fftInfo; }
   const quarter_FFT& getQuarterFFTInfo() const { return *quarter_fftInfo; }
+
+  //! The largest FFT we need to handle degree-m polynomials
+  long fftSizeNeeded() const { return NTL::NextPowerOfTwo(getM()) + 1; }
+  // TODO: should have a special case when m is power of two
 };
+
+#ifndef BIGINT_P
 
 enum PA_tag
 {
@@ -884,6 +895,44 @@ bool comparePAlgebra(const PAlgebra& palg,
 
 // for internal consumption only
 double calcPolyNormBnd(long m);
+
+#else
+class PAlgebraMod
+{
+private:
+  const PAlgebra& zMStar;
+  long r;
+  NTL::ZZ pPowR;
+
+public:
+  PAlgebraMod& operator=(const PAlgebraMod&) = delete;
+
+  explicit PAlgebraMod(const PAlgebra& zMStar, long r) :
+    zMStar(zMStar), r(r)
+  {
+    NTL::ZZ p = zMStar.getP();
+    NTL::ZZ BigPPowR = NTL::power(p, r);
+    pPowR = BigPPowR;
+  }
+
+    //! Returns reference to underlying PAlgebra object
+  const PAlgebra& getZMStar() const { return zMStar; }
+
+  //! The value r
+  long getR() const { return r; }
+  //! The value p^r
+  NTL::ZZ getPPowR() const { return pPowR; }
+
+    bool operator==(const PAlgebraMod& other) const
+  {
+    return getZMStar() == other.getZMStar() && getR() == other.getR();
+  }
+  // comparison
+
+  bool operator!=(const PAlgebraMod& other) const { return !(*this == other); }
+  // comparison
+};
+#endif
 
 } // namespace helib
 

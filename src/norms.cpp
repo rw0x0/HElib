@@ -24,6 +24,7 @@
 #include <helib/range.h>
 
 namespace helib {
+// #ifndef BIGINT_P
 
 #define USE_HALF_FFT (1)
 // setting this to one makes use if a faster "half FFT"
@@ -433,6 +434,7 @@ void embeddingLargestCoeff_x2(double& norm1,
     basic_embeddingLargestCoeff_x2(norm1, norm2, f1, f2, palg);
 }
 
+
 double embeddingLargestCoeff(const zzX& f, const PAlgebra& palg)
 {
   std::vector<double> ff;
@@ -483,6 +485,8 @@ NTL::xdouble embeddingLargestCoeff(const NTL::ZZX& f, const PAlgebra& palg)
   NTL::xdouble factor = scale(ff, f);
   return embeddingLargestCoeff(ff, palg) * factor;
 }
+
+#ifndef BIGINT_P
 
 // === Computing the canonical embedding and inverse ===
 
@@ -770,4 +774,5 @@ void embedInSlots(zzX& f, const std::vector<cx_double>& v,
 
 #endif
 
+#endif
 } // namespace helib

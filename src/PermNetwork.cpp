@@ -15,6 +15,8 @@
 #include <helib/permutations.h>
 #include <helib/EncryptedArray.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 std::ostream& operator<<(std::ostream& s, const PermNetwork& net)
@@ -259,3 +261,5 @@ void PermNetwork::applyToCtxt(Ctxt& c, const EncryptedArray& ea) const
 }
 
 } // namespace helib
+
+#endif

@@ -17,6 +17,8 @@
  */
 #include <helib/randomMatrices.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 MatMul1D* buildRandomMatrix(const EncryptedArray& ea, long dim)
@@ -108,3 +110,5 @@ BlockMatMulFull* buildRandomFullBlockMatrix(const EncryptedArray& ea)
 }
 
 } // namespace helib
+
+#endif

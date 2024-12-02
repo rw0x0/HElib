@@ -21,6 +21,8 @@
 #include <helib/hypercube.h>
 #include <helib/apiAttributes.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 //! A simple permutation is just a vector with p[i]=\pi_i
@@ -668,3 +670,5 @@ public:
 } // namespace helib
 
 #endif // ifndef HELIB_PERMUTATIONS_H
+
+#endif

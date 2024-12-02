@@ -90,6 +90,8 @@ bool PAlgebra::operator==(const PAlgebra& other) const
   return true;
 }
 
+#ifndef BIGINT_P
+
 long PAlgebra::exponentiate(const std::vector<long>& exps,
                             bool onlySameOrd) const
 {
@@ -166,8 +168,7 @@ void PAlgebra::printAll(std::ostream& out) const
     out << "]\n";
   }
 }
-
-static double cotan(double x) { return 1 / tan(x); }
+#endif
 
 half_FFT::half_FFT(long m) : fft(m / 2)
 {
@@ -199,6 +200,8 @@ quarter_FFT::quarter_FFT(long m) : fft(m / 4)
   }
 }
 
+static double cotan(double x) { return 1 / tan(x); }
+
 static inline std::complex<double> MUL(std::complex<double> a,
                                        std::complex<double> b)
 {
@@ -211,6 +214,7 @@ static inline double ABS(std::complex<double> a)
   double x = a.real(), y = a.imag();
   return std::sqrt(x * x + y * y);
 }
+
 
 double calcPolyNormBnd(long m)
 {
@@ -430,6 +434,8 @@ double calcPolyNormBnd(long m)
   return max_norm;
 }
 
+#ifndef BIGINT_P
+
 PAlgebraModDerived<PA_cx>::PAlgebraModDerived(const PAlgebra& palg, long _r) :
     zMStar(palg), r(_r)
 {
@@ -586,6 +592,158 @@ PAlgebra::PAlgebra(long mm,
   if (mm % 4 == 0)
     quarter_fftInfo = std::make_shared<quarter_FFT>(mm);
 }
+
+#else
+
+PAlgebra::PAlgebra(long mm,
+                   NTL::ZZ pp,
+                   const std::vector<long>& _gens,
+                   const std::vector<long>& _ords) :
+    m(mm), p(pp), cM(1.0) // default value for the ring constant
+{
+  NTL::ZZ mm_ = NTL::to_ZZ(mm);
+  assertInRange<InvalidArgument>(mm,
+                                 2l,
+                                 NTL_SP_BOUND,
+                                 "mm is not in [2, NTL_SP_BOUND)");
+  if (pp == -1) // pp==-1 signals using the complex field for plaintext
+    pp = m - 1;
+  else {
+    assertTrue<InvalidArgument>((bool)NTL::ProbPrime(pp),
+                                "Modulus pp is not prime (nor -1)");
+    assertNeq<InvalidArgument>(mm_ % pp, NTL::ZZ(0), "Modulus pp divides mm");
+  }
+
+  long k = NTL::NextPowerOfTwo(mm);
+  if (static_cast<unsigned long>(mm) == (1UL << k)) // m is a power of two
+    pow2 = k;
+  else if (p != -1) // is not power of two, set to zero (even if m is even!)
+    pow2 = 0;
+  else // CKKS requires m to be a power of two.  Throw if not.
+    throw InvalidArgument("CKKS scheme only supports m as a power of two.");
+
+  // For dry-run, use a tiny m value for the PAlgebra tables
+  if (isDryRun())
+    m = (p == 3) ? 4 : 3;
+
+  // Compute the generators for (Z/mZ)^* (defined in NumbTh.cpp)
+
+  std::vector<long> tmpOrds;
+  if (_gens.size() > 0 && _gens.size() == _ords.size() && !isDryRun()) {
+    // externally supplied generator,orders
+    tmpOrds = _ords;
+    this->gens = _gens;
+    this->ordP = multOrd(pp, mm_);
+  } else
+    // treat externally supplied generators (if any) as candidates
+    this->ordP = findGenerators(this->gens, tmpOrds, mm, pp, _gens);
+
+  // Record for each generator gi whether it has the same order in
+  // ZM* as in Zm* /(p,g1,...,g_{i-1})
+
+  resize(native, lsize(tmpOrds));
+  resize(frob_perturb, lsize(tmpOrds));
+  std::vector<long> p_subgp(mm);
+  for (long i : range(mm))
+    p_subgp[i] = -1;
+  long pmodm = pp % mm;
+  p_subgp[1] = 0;
+  for (long i = 1, p2i = pmodm; p2i != 1; i++, p2i = NTL::MulMod(p2i, pmodm, m))
+    p_subgp[p2i] = i;
+  for (long j : range(tmpOrds.size())) {
+    tmpOrds[j] = std::abs(tmpOrds[j]);
+    // for backward compatibility, a user supplied
+    // ords value could be negative, but we ignore that here.
+    // For testing and debugging, we may want to not ignore this...
+
+    long i = NTL::PowerMod(this->gens[j], tmpOrds[j], m);
+
+    native[j] = (i == 1);
+    frob_perturb[j] = p_subgp[i];
+  }
+
+  cube.initSignature(tmpOrds); // set hypercube with these dimensions
+
+  phiM = ordP * getNSlots();
+
+  NTL::Vec<NTL::Pair<long, long>> factors;
+  factorize(factors, mm);
+  nfactors = factors.length();
+
+  radm = 1;
+  for (long i : range(nfactors))
+    radm *= factors[i].a;
+
+  normBnd = 1.0;
+  for (long i : range(nfactors)) {
+    long u = factors[i].a;
+    normBnd *= 2.0L * cotan(PI / (2.0L * u)) / u;
+  }
+
+  polyNormBnd = calcPolyNormBnd(mm);
+
+  // Allocate space for the various arrays
+//   resize(T, getNSlots());
+//   Tidx.assign(mm, -1);   // allocate m slots, initialize them to -1
+  zmsIdx.assign(mm, -1); // allocate m slots, initialize them to -1
+  resize(zmsRep, phiM);
+
+  for (long i = 0, idx = 0; i < mm; i++) {
+    if (NTL::GCD(i, mm) == 1) {
+      zmsIdx[i] = idx++;
+      zmsRep[zmsIdx[i]] = i;
+    }
+  }
+
+  // Now fill the Tidx translation table. We identify an element t \in T
+  // with its representation t = \prod_{i=0}^n gi^{ei} mod m (where the
+  // gi's are the generators in gens[]) , represent t by the vector of
+  // exponents *in reverse order* (en,...,e1,e0), and order these vectors
+  // in lexicographic order.
+
+  // FIXME: is the comment above about reverse order true?
+  // It doesn't seem like it to me, VJS.
+  // The comment about reverse order is correct, SH.
+
+  // buffer is initialized to all-zero, which represents 1=\prod_i gi^0
+//   std::vector<long> buffer(gens.size()); // temporary holds exponents
+
+//   long ctr = 0;
+//   long i = 0;
+//   do {
+//     ctr++;
+//     long t = exponentiate(buffer);
+
+//     // sanity check for user-supplied gens
+//     assertEq(NTL::GCD(t, mm), 1l, "Bad user-supplied generator");
+//     assertEq(Tidx[t], -1l, "Slot at index t has already been assigned");
+
+//     T[i] = t;      // The i'th element in T it t
+//     Tidx[t] = i++; // the index of t in T is i
+
+//     // increment buffer by one (in lexicographic order)
+//   } while (nextExpVector(buffer)); // until we cover all the group
+
+//   // sanity check for user-supplied gens
+//   assertEq(ctr, getNSlots(), "Bad user-supplied generator set");
+
+  PhimX = Cyclotomic(mm); // compute and store Phi_m(X)
+  //  pp_factorize(mFactors,mm); // prime-power factorization from NumbTh.cpp
+
+  if (mm % 2 == 0)
+    half_fftInfo = std::make_shared<half_FFT>(mm);
+  else
+    fftInfo = std::make_shared<PGFFT>(mm);
+
+//   fftInfo = std::make_shared<PGFFT>(mm); // Need this for some debugging/timing
+
+  if (mm % 4 == 0)
+    quarter_fftInfo = std::make_shared<quarter_FFT>(mm);
+}
+
+#endif
+
+#ifndef BIGINT_P
 
 bool comparePAlgebra(const PAlgebra& palg,
                      unsigned long m,
@@ -1407,5 +1565,7 @@ void PAlgebraModDerived<type>::evalTree(RX& res,
 
 template class PAlgebraModDerived<PA_GF2>;
 template class PAlgebraModDerived<PA_zz_p>;
+
+#endif
 
 } // namespace helib

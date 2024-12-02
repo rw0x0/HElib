@@ -367,7 +367,7 @@ public:
    * @note `NTL::ZZX` representation loses some precision in the `CKKS` case.
    **/
   NTL::ZZX getPolyRepr() const;
-
+#ifndef BIGINT_P
   /**
    * @brief Converts the slot data in `this` to a corresponding EncodedPtxt
    * object. mag,prec must be defaulted for BGV (runtime error if not).
@@ -375,7 +375,7 @@ public:
   void encode(EncodedPtxt& eptxt,
               double mag = -1,
               OptLong prec = OptLong()) const;
-
+#endif
   /**
    * @brief Square bracket accessor operator.
    * @param i Index of the desired `Ptxt` slot.

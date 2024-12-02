@@ -345,6 +345,8 @@ void addAllMatrices(SecKey& sKey, long keyID)
   }                                                                            \
   NTL::mulmod_precon_t giminv = PrepMulModPrecon(gi, m);
 
+#ifndef BIGINT_P
+
 #if 0
 static void add1Dmats4dim(SecKey& sKey, long i, long keyID)
 {
@@ -695,5 +697,6 @@ void addTheseMatrices(SecKey& sKey, const std::set<long>& automVals, long keyID)
   }
   sKey.setKeySwitchMap(); // re-compute the key-switching map
 }
+#endif
 
 } // namespace helib

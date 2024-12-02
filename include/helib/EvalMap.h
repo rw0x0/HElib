@@ -15,9 +15,11 @@
  *  @brief Implementing the recryption linear transformations
  */
 
+
 #include <helib/EncryptedArray.h>
 #include <helib/matmul.h>
 
+#ifndef BIGINT_P
 namespace helib {
 
 //! @class EvalMap
@@ -104,5 +106,7 @@ public:
 };
 
 } // namespace helib
+
+#endif
 
 #endif // ifndef HELIB_EVALMAP_H

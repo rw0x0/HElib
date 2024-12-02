@@ -24,6 +24,8 @@
 #include <NTL/BasicThreadPool.h>
 #include <helib/binaryArith.h>
 
+#ifndef BIGINT_P
+
 #ifdef HELIB_DEBUG
 #include <cstdio>
 #include <helib/debugging.h>
@@ -1460,3 +1462,5 @@ void decryptAndSum(std::ostream& s,
 #endif // ifdef HELIB_DEBUG
 
 } // namespace helib
+
+#endif

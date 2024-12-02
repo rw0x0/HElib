@@ -21,6 +21,8 @@
 
 #include "io.h"
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 EncryptedArrayBase* buildEncryptedArray(const Context& context,
@@ -2010,3 +2012,5 @@ template class PlaintextArrayDerived<PA_zz_p>;
 template class PlaintextArrayDerived<PA_cx>;
 
 } // namespace helib
+
+#endif

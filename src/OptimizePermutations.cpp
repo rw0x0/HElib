@@ -24,6 +24,8 @@
 #include <helib/permutations.h>
 #include <helib/apiAttributes.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 //! \cond FALSE (make doxygen ignore these classes)
@@ -1015,3 +1017,5 @@ long GeneratorTrees::buildOptimalTrees(const NTL::Vec<GenDescriptor>& gens,
 }
 
 } // namespace helib
+
+#endif

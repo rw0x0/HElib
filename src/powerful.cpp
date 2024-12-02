@@ -15,6 +15,7 @@
 
 #include <helib/powerful.h>
 
+#ifndef BIGINT_P
 namespace helib {
 
 // powVec[d] = p_d^{e_d}, m = \prod_d p_d^{e_d}
@@ -856,3 +857,5 @@ void interp(HyperCube<NTL::zz_p>& cube,
 #endif
 
 } // namespace helib
+
+#endif

@@ -18,6 +18,7 @@
 #include <helib/replicate.h>
 #include <helib/intraSlot.h>
 
+#ifndef BIGINT_P
 namespace helib {
 
 // Implementation classes for unpacking:
@@ -373,3 +374,5 @@ void unpackSlots(std::vector<std::size_t>& value,
 }
 
 } // namespace helib
+
+#endif

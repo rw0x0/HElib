@@ -21,6 +21,8 @@
 #include <helib/NumbTh.h>
 #include <helib/permutations.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 static void recursiveGeneralBenesInit(long n,
@@ -325,3 +327,5 @@ bool GeneralBenesNetwork::testNetwork(const Permut& perm) const
 }
 
 } // namespace helib
+
+#endif

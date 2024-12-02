@@ -14,6 +14,8 @@
 #include <helib/timing.h>
 #include <helib/ClonedPtr.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 NTL_THREAD_LOCAL
@@ -740,3 +742,5 @@ void replicate(const EncryptedArray& ea, PlaintextArray& pa, long i)
 }
 
 } // namespace helib
+
+#endif

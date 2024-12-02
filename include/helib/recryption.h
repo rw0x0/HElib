@@ -17,6 +17,8 @@
 
 #include <helib/NumbTh.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 extern long thinRecrypt_initial_level;
@@ -117,4 +119,5 @@ public:
 
 } // namespace helib
 
+#endif
 #endif // HELIB_RECRYPTION_H

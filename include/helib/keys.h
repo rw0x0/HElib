@@ -183,6 +183,7 @@ public:
                NTL::ZZ& ptxtSpace,
                bool highNoise) const;
 
+#ifndef BIGINT_P
   /**
    * @deprecated This routine has a number of issues and is deprecated in favor
    * of the new `EncodedPtxt`-based routine.\n
@@ -201,6 +202,7 @@ public:
                    const zzX& plaintxt,
                    double ptxtSize = 1.0,
                    double scaling = 0.0) const;
+#endif
 
   // These methods are overridden by secret-key Encrypt
   virtual NTL::ZZ Encrypt(Ctxt& ciphertxt,

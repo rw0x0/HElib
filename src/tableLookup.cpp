@@ -21,6 +21,8 @@
 #include <helib/intraSlot.h>
 #include <helib/tableLookup.h>
 
+#ifndef BIGINT_P
+
 #ifdef HELIB_DEBUG
 #include <helib/debugging.h>
 #endif
@@ -282,3 +284,5 @@ static double pow2_double(long n) // compute 2^n as double
 }
 
 } // namespace helib
+
+#endif

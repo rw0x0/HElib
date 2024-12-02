@@ -16,6 +16,8 @@
 
 #include "io.h"
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 template <>
@@ -1094,3 +1096,5 @@ template class Ptxt<BGV>;
 template class Ptxt<CKKS>;
 
 } // namespace helib
+
+#endif

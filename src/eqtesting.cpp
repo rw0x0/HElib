@@ -36,6 +36,8 @@
 
 #include <cstdio>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 // Map all non-zero slots to 1, leaving zero slots as zero.
@@ -196,3 +198,5 @@ void incrementalZeroTest(Ctxt* res[],
 }
 
 } // namespace helib
+
+#endif

@@ -29,6 +29,8 @@
 #include <helib/exceptions.h>
 #include <helib/log.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 typedef std::complex<double> cx_double;
@@ -2743,5 +2745,5 @@ struct pa_no_impl
   {};
 
 } // namespace helib
-
+#endif
 #endif // ifndef HELIB_ENCRYPTEDARRAY_H

@@ -25,6 +25,8 @@
 #include <helib/log.h>
 #include <helib/fhe_stats.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 static constexpr cx_double the_imaginary_i = cx_double(0.0, 1.0);
@@ -498,3 +500,5 @@ void EncryptedArrayCx::buildLinPolyCoeffs(
 }
 
 } // namespace helib
+
+#endif

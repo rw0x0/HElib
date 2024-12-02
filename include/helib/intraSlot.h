@@ -21,6 +21,8 @@
 #include <helib/Ctxt.h>
 #include <helib/CtPtrs.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 // Prepare the constants for unpacking
@@ -77,4 +79,5 @@ void packConstants(zzX& result,
 
 } // namespace helib
 
+#endif
 #endif // ifndef HELIB_INTRASLOT_H

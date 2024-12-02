@@ -34,6 +34,8 @@
 #include <helib/EncryptedArray.h>
 #include <helib/Ptxt.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 // set to true to see some more info...
@@ -192,5 +194,7 @@ public:
 //! @endcond
 
 } // namespace helib
+
+#endif
 
 #endif // ifndef HELIB_REPLICATE_H

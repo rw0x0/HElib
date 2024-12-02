@@ -13,6 +13,7 @@
 #include <helib/permutations.h>
 #include <helib/EncryptedArray.h>
 
+#ifndef BIGINT_P
 namespace helib {
 
 const NTL::Vec<long> SubDimension::dummyBenes; // global variable
@@ -584,3 +585,5 @@ void PermPrecomp::apply(PtxtArray& a) const
 }
 
 } // namespace helib
+
+#endif

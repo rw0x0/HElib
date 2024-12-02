@@ -15,6 +15,8 @@
 #include <helib/EncryptedArray.h>
 #include <functional>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 class MatMulFullExec;
@@ -584,4 +586,5 @@ extern int fhe_test_force_hoist;
 
 } // namespace helib
 
+#endif
 #endif // ifndef HELIB_MATMUL_H

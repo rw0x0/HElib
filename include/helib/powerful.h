@@ -22,6 +22,8 @@
 #include <helib/DoubleCRT.h>
 #include <helib/Context.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 //! @class PowerfulTranslationIndexes
@@ -413,4 +415,5 @@ void interp(HyperCube<zz_p>& cube,
 
 } // namespace helib
 
+#endif
 #endif // ifndef HELIB_POWERFUL_H

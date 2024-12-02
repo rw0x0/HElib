@@ -318,9 +318,10 @@ bool Context::operator==(const Context& other) const
   if (hwt_param != other.hwt_param)
     return false;
 
+#ifndef BIGINT_P
   if (rcData != other.rcData)
     return false;
-
+#endif
   return true;
 }
 
@@ -334,6 +335,7 @@ void Context::writeTo(std::ostream& str) const
   write_raw_int(str, this->alMod.getR());
   write_raw_int(str, this->zMStar.getM());
 
+#ifndef BIGINT_P
   write_raw_int(str, this->zMStar.numOfGens());
 
   // There aren't simple getters to get the gens and ords vectors
@@ -351,6 +353,7 @@ void Context::writeTo(std::ostream& str) const
     else
       write_raw_int(str, -this->zMStar.OrderOf(i));
   }
+#endif
 
   // standard-deviation
   write_raw_xdouble(str, this->stdev);
@@ -381,10 +384,11 @@ void Context::writeTo(std::ostream& str) const
   write_raw_int(str, this->hwt_param);
   write_raw_int(str, this->e_param);
   write_raw_int(str, this->ePrime_param);
-
+#ifndef BIGINT_P
   write_ntl_vec_long(str, this->rcData.mvec);
   write_raw_int(str, static_cast<long>(this->rcData.build_cache));
   write_raw_int(str, static_cast<long>(this->rcData.alsoThick));
+#endif
 
   writeEyeCatcher(str, EyeCatcher::CONTEXT_END);
 }
@@ -514,6 +518,7 @@ Context* Context::readPtrFromJSON(std::istream& is)
 JsonWrapper Context::writeToJSON() const
 {
   std::function<JsonWrapper()> body = [this]() {
+    #ifndef BIGINT_P
     std::vector<long> gens(this->zMStar.numOfGens());
     // There aren't simple getters to get the gens and ords vectors
     for (long i = 0; i < this->zMStar.numOfGens(); i++) {
@@ -528,6 +533,7 @@ JsonWrapper Context::writeToJSON() const
       else
         ords[i] = -this->zMStar.OrderOf(i);
     }
+    #endif
 
     // output the primes in the chain
     std::vector<long> qs;
@@ -546,8 +552,10 @@ JsonWrapper Context::writeToJSON() const
     json j = {{"m", this->zMStar.getM()},
               {"p", this->zMStar.getP()},
               {"r", this->alMod.getR()},
+              #ifndef BIGINT_P
               {"gens", gens},
               {"ords", ords},
+              #endif
               {"stdev", this->stdev},
               {"scale", this->scale},
               {"smallPrimes", unwrap(this->smallPrimes.writeToJSON())},
@@ -556,10 +564,14 @@ JsonWrapper Context::writeToJSON() const
               {"digits", writeVectorToJSON(this->digits)},
               {"hwt_param", this->hwt_param},
               {"e_param", this->e_param},
-              {"ePrime_param", this->ePrime_param},
+              {"ePrime_param", this->ePrime_param}
+#ifndef BIGINT_P
+,
               {"mvec", this->rcData.mvec},
               {"build_cache", this->rcData.build_cache},
-              {"alsoThick", this->rcData.alsoThick}};
+              {"alsoThick", this->rcData.alsoThick}
+#endif
+    };
     return wrap(toTypedJson<Context>(j));
   };
 
@@ -580,6 +592,7 @@ std::ostream& operator<<(std::ostream& os, const Context& context)
   return os;
 }
 
+#ifndef BIGINT_P
 NTL::ZZX getG(const EncryptedArray& ea)
 {
   NTL::ZZX G;
@@ -598,6 +611,7 @@ NTL::ZZX getG(const EncryptedArray& ea)
   }
   return G;
 }
+#endif
 
 // Constructors must ensure that alMod points to zMStar, and
 // rcEA (if set) points to rcAlmod which points to zMStar
@@ -609,6 +623,7 @@ Context::Context(unsigned long m,
     zMStar(m, p, gens, ords),
     alMod(zMStar, r),
 
+#ifndef BIGINT_P
     // VJS-FIXME: I'm not sure this makes sense.
     // This constrictor was provided mainly for bootstrapping.
     // Most BGV applications will *not* use fully packed slots
@@ -626,24 +641,32 @@ Context::Context(unsigned long m,
     // by the user.
 
     pwfl_converter(nullptr),
+#endif
     stdev(3.2),
     scale(10.0)
 {
   // NOTE: pwfl_converter will be set in buildModChain (or endBuildModChain),
   // after the prime chain has been built, as it depends on the primeChain
 
+#ifndef BIGINT_P
   if (!isCKKS()) {
     slotRing =
-        std::make_shared<PolyModRing>(zMStar.getP(), alMod.getR(), getG(*ea));
+       std::make_shared<PolyModRing>(zMStar.getP(), alMod.getR(), getG(*ea));
   }
+#endif
 }
 
 void Context::printout(std::ostream& out) const
 {
+
+#ifndef BIGINT_P
   ea->getPAlgebra().printout(out);
+#endif
   out << "r = " << alMod.getR() << "\n"
+#ifndef BIGINT_P
       << "nslots = " << ea->size() << "\n"
       << "hwt = " << hwt_param << "\n"
+#endif
       << "ctxtPrimes = " << ctxtPrimes << "\n"
       << "specialPrimes = " << specialPrimes << "\n"
       << "number of bits = " << bitSizeOfQ() << "\n\n"
@@ -669,12 +692,13 @@ Context::Context(long m,
                         mparams->skHwt,
                         mparams->resolution,
                         mparams->bitsInSpecialPrimes);
-
+#ifndef BIGINT_P
     if (mparams->bootstrappableFlag && bparams) {
       this->enableBootStrapping(bparams->mvec,
                                 bparams->buildCacheFlag,
                                 bparams->thickFlag);
     }
+#endif
   }
 }
 
@@ -706,10 +730,12 @@ Context::Context(const SerializableContent& content) :
 
   // Read in the partition of m into co-prime factors (if bootstrappable)
   if (content.mvec.length() > 0) {
+    #ifndef BIGINT_P
     // VJS-FIXME: what about the build_cache and alsoThick params?
     this->enableBootStrapping(content.mvec,
                               content.build_cache,
                               content.alsoThick);
+  #endif
   }
 }
 
@@ -886,6 +912,7 @@ void Context::addSpecialPrimes(long nDgts,
   NTL::ZZ p2r = isCKKS() ? NTL::ZZ(1) : getAlMod().getPPowR();
 
   NTL::ZZ p2e = p2r;
+#ifndef BIGINT_P
   if (willBeBootstrappable && !isCKKS()) {
     // bigger p^e for bootstrapping
     long e, ePrime;
@@ -896,6 +923,7 @@ void Context::addSpecialPrimes(long nDgts,
     this->e_param = e;
     this->ePrime_param = ePrime;
   }
+#endif
 
   long nCtxtPrimes = getCtxtPrimes().card();
   if (nDgts > nCtxtPrimes)
@@ -1092,7 +1120,9 @@ void Context::endBuildModChain()
   pp_factorize(mvec, m);
   NTL::Vec<long> mmvec;
   convert(mmvec, mvec);
+  #ifndef BIGINT_P
   pwfl_converter = std::make_shared<PowerfulDCRT>(*this, mmvec);
+  #endif
 }
 
 // Helper for the build and buildPtr methods

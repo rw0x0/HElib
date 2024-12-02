@@ -18,6 +18,8 @@
 #include <helib/matmul.h>
 #include <NTL/BasicThreadPool.h>
 
+#ifndef BIGINT_P
+
 namespace helib {
 
 template <typename type>
@@ -331,3 +333,5 @@ BlockMatMulFull* buildRandomFullBlockMatrix(const EncryptedArray& ea);
 } // namespace helib
 
 #endif // ifndef HELIB_RANDOMMATRICES_H
+
+#endif

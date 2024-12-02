@@ -18,6 +18,7 @@
 #include <helib/fhe_stats.h>
 #include <helib/apiAttributes.h>
 
+#ifndef BIGINT_P
 namespace helib {
 
 int fhe_test_force_bsgs = 0;
@@ -2961,3 +2962,5 @@ void traceMap(Ctxt& ctxt)
 }
 
 } // namespace helib
+
+#endif

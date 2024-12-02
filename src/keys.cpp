@@ -361,6 +361,7 @@ NTL::ZZ PubKey::Encrypt(Ctxt& ctxt,
                      bool highNoise) const
 {
   HELIB_TIMER_START;
+  #ifndef BIGINT_P
   // NOTE: isCKKS() checks the tag in the alMod  the context
   if (isCKKS()) {
     double pSize = (ptxtSpace <= 0) ? 1.0 : NTL::to_double(ptxtSpace);
@@ -368,6 +369,7 @@ NTL::ZZ PubKey::Encrypt(Ctxt& ctxt,
     CKKSencrypt(ctxt, ptxt, pSize); // FIXME: handle highNoise in CKKSencrypt
     return ptxtSpace;
   }
+  #endif
 
   assertEq(this, &ctxt.pubKey, "Public key and context public key mismatch");
   if (ptxtSpace != pubEncrKey.ptxtSpace) { // plaintext-space mismatch
@@ -498,6 +500,7 @@ NTL::ZZ PubKey::Encrypt(Ctxt& ciphertxt,
   return Encrypt(ciphertxt, tmp, ptxtSpace, highNoise);
 }
 
+#ifndef BIGINT_P
 // FIXME: Some code duplication between here and Encrypt above
 void PubKey::CKKSencrypt(Ctxt& ctxt,
                          const NTL::ZZX& ptxt,
@@ -590,6 +593,7 @@ void PubKey::CKKSencrypt(Ctxt& ciphertxt,
   convert(tmp, plaintxt);
   CKKSencrypt(ciphertxt, tmp, ptxtSize, scaling);
 }
+#endif
 
 // These methods are overridden by secret-key Encrypt
 NTL::ZZ PubKey::Encrypt(Ctxt& ciphertxt,
@@ -603,7 +607,7 @@ NTL::ZZ PubKey::Encrypt(Ctxt& ciphertxt, const zzX& plaintxt, NTL::ZZ ptxtSpace)
 {
   return Encrypt(ciphertxt, plaintxt, ptxtSpace, /*highNoise=*/false);
 }
-
+#ifndef BIGINT_P
 // These two specialisations are here to avoid a circular dependency on
 // EncryptedArray
 template <>
@@ -630,6 +634,7 @@ void PubKey::Encrypt(Ctxt& ciphertxt, const Ptxt<CKKS>& plaintxt) const
 
   Encrypt(ciphertxt, eptxt);
 }
+#endif
 
 void PubKey::Encrypt(Ctxt& ctxt, const EncodedPtxt_BGV& eptxt) const
 {
@@ -866,7 +871,11 @@ void PubKey::Encrypt(Ctxt& ctxt, const EncodedPtxt& eptxt) const
 
 bool PubKey::isCKKS() const
 {
+#ifndef BIGINT_P
   return (getContext().getAlMod().getTag() == PA_cx_tag);
+#else
+  return false;
+#endif
 }
 // NOTE: Is taking the alMod from the context the right thing to do?
 
@@ -1113,11 +1122,13 @@ long SecKey::ImportSecKey(const DoubleCRT& sKey,
     // Choose a new RLWE instance
     pubEncrKey.noiseBound =
         RLWE(pubEncrKey.parts[0], pubEncrKey.parts[1], sKey, ptxtSpace);
+#ifndef BIGINT_P
     if (isCKKS()) {
       pubEncrKey.ptxtMag = 0.0;
       pubEncrKey.ratFactor = pubEncrKey.noiseBound *
                              getContext().getEA().getCx().encodeScalingFactor();
     }
+#endif
 
     // make parts[0],parts[1] point to (1,s)
     pubEncrKey.parts[0].skHandle.setOne();
@@ -1215,8 +1226,10 @@ void SecKey::GenKeySWmatrix(long fromSPower,
   else { // BGV
     if (p < 2) {
       if (context.isBootstrappable()) {
+        #ifndef BIGINT_P
         // use larger bootstrapping plaintext space
         p = context.getRcData().alMod->getPPowR();
+        #endif
       } else {
         p = pubEncrKey.ptxtSpace; // default plaintext space from public key
       }
@@ -1263,6 +1276,7 @@ void SecKey::Decrypt(NTL::ZZX& plaintxt, const Ctxt& ciphertxt) const
   Decrypt(plaintxt, ciphertxt, f);
 }
 
+#ifndef BIGINT_P
 // These two specialisations are here to avoid a circular dependency on
 // EncryptedArray
 template <>
@@ -1289,6 +1303,7 @@ void SecKey::Decrypt<CKKS>(Ptxt<CKKS>& plaintxt,
   view.decrypt(ciphertxt, *this, ptxt, prec);
   plaintxt.setData(ptxt);
 }
+#endif
 
 // VJS-NOTE: this is duplicated code...moreover, it does
 // not implement the mitigation against CKKS vulnerability.
@@ -1386,6 +1401,7 @@ void SecKey::Decrypt(NTL::ZZX& plaintxt,
   }
   // convert to coefficient representation & reduce modulo the plaintext space
 
+#ifndef BIGINT_P
   if (DECRYPT_ON_PWFL_BASIS && !getContext().getZMStar().getPow2()) {
     const PowerfulDCRT& pwfl_converter = getContext().getPowerfulConverter();
     NTL::Vec<NTL::ZZ> pwfl;
@@ -1398,8 +1414,11 @@ void SecKey::Decrypt(NTL::ZZX& plaintxt,
     pwfl_converter.powerfulToZZX(plaintxt, pwfl);
     // now convert to polynomial basis, with no modular reduction
   } else {
+#endif
     ptxt.toPoly(plaintxt);
+#ifndef BIGINT_P
   }
+#endif
 
   f = plaintxt; // f used only for debugging
 
@@ -1473,6 +1492,7 @@ NTL::ZZ SecKey::skEncrypt(Ctxt& ctxt,
   // Sample a new RLWE instance
   ctxt.noiseBound = RLWE(ctxt.parts[0], ctxt.parts[1], sKey, ptxtSpace);
 
+#ifndef BIGINT_P
   if (isCKKS()) {
 
     double f = getContext().getEA().getCx().encodeScalingFactor() / ptxtSize;
@@ -1492,6 +1512,7 @@ NTL::ZZ SecKey::skEncrypt(Ctxt& ctxt,
     return NTL::ZZ(f);
 
   } else { // BGV
+#endif
 
     // The logic here has changed to be identical
     // to that used in public key encryption
@@ -1529,7 +1550,10 @@ NTL::ZZ SecKey::skEncrypt(Ctxt& ctxt,
     ctxt.noiseBound += ptxt_bound;
 
     return ctxt.ptxtSpace;
+
+#ifndef BIGINT_P
   }
+#endif
 }
 
 NTL::ZZ SecKey::skEncrypt(Ctxt& ctxt,
@@ -1682,6 +1706,7 @@ void SecKey::Encrypt(Ctxt& ctxt, const EncodedPtxt_CKKS& eptxt) const
 //============================================================
 
 // Generate bootstrapping data if needed, returns index of key
+#ifndef BIGINT_P
 long SecKey::genRecryptData()
 {
   if (recryptKeyID >= 0)
@@ -1718,6 +1743,7 @@ long SecKey::genRecryptData()
 
   return (recryptKeyID = keyID); // return the new key-ID
 }
+#endif
 
 std::ostream& operator<<(std::ostream& str, const SecKey& sk)
 {

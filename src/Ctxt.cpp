@@ -135,6 +135,7 @@ void Ctxt::DummyEncrypt(const NTL::ZZX& ptxt, double size)
 {
   const Context& context = getContext();
 
+#ifndef BIGINT_P
   if (isCKKS()) {
     ptxtSpace = 1;
 
@@ -146,6 +147,7 @@ void Ctxt::DummyEncrypt(const NTL::ZZX& ptxt, double size)
     // noiseBound is a bound on the error during encoding, we assume
     // heuristically that rounding errors are uniform in [-0.5,0.5].
   } else { // BGV
+#endif
     if (size < 0) {
       // HEURISTIC: we assume that we can safely model the coefficients
       // of ptxt as uniformly and independently distributed over
@@ -153,7 +155,9 @@ void Ctxt::DummyEncrypt(const NTL::ZZX& ptxt, double size)
       noiseBound = context.noiseBoundForMod(ptxtSpace, context.getPhiM());
     } else
       noiseBound = size;
+#ifndef BIGINT_P
   }
+#endif
 
   primeSet = context.getCtxtPrimes();
 
@@ -900,10 +904,12 @@ void Ctxt::addPart(const DoubleCRT& part,
 // Add a constant polynomial
 void Ctxt::addConstant(const DoubleCRT& dcrt, double size)
 {
+#ifndef BIGINT_P
   if (isCKKS()) {
     addConstantCKKS(dcrt, NTL::to_xdouble(size));
     return;
   }
+#endif
 
   // FIXME: the other addConstant variants should do the scaling
   // in the plaintext space, so as to not add noise
@@ -953,6 +959,8 @@ void Ctxt::addConstant(const NTL::ZZX& poly, double size)
 // a bound on the size of the content of the slots. If the factor is not
 // specified, we the default PAlgebraModCx::encodeScalingFactor()/size
 void addSomePrimes(Ctxt& c);
+
+#ifndef BIGINT_P
 void Ctxt::addConstantCKKS(const DoubleCRT& dcrt,
                            NTL::xdouble size,
                            NTL::xdouble factor)
@@ -1163,6 +1171,7 @@ void Ctxt::addConstantCKKS(const Ptxt<CKKS>& ptxt)
   // addConstantCKKS(ptxt.getSlotRepr());
   *this += ptxt;
 }
+#endif
 
 // Add at least one prime to the primeSet of c
 void addSomePrimes(Ctxt& c)
@@ -1849,11 +1858,13 @@ void Ctxt::multByConstant(const DoubleCRT& dcrt, double size)
   if (this->isEmpty())
     return;
 
+#ifndef BIGINT_P
   if (isCKKS()) {
     multByConstantCKKS(dcrt, NTL::to_xdouble(size));
     // Use default size, factor, encoding-rounding-error
     return;
   }
+#endif
 
   // If the size is not given, we use the default value corresponding
   // to uniform distribution on [-ptxtSpace/2, ptxtSpace/2].
@@ -1894,6 +1905,7 @@ void Ctxt::multByConstant(const zzX& poly, double size)
   multByConstant(dcrt, size);
 }
 
+#ifndef BIGINT_P
 void Ctxt::multByConstantCKKS(const std::vector<std::complex<double>>& other)
 {
   // VJS-FIXME: this routine has a number of issues and should
@@ -1965,6 +1977,7 @@ void Ctxt::multByConstant(const PtxtArray& ptxt)
   ptxt.encode(eptxt);
   multByConstant(eptxt);
 }
+#endif
 
 void Ctxt::multByConstant(const EncodedPtxt& eptxt)
 {
@@ -2128,12 +2141,14 @@ void Ctxt::multByConstant(NTL::xdouble c)
 
 //============ new addConstant interface ===========
 
+#ifndef BIGINT_P
 void Ctxt::addConstant(const PtxtArray& ptxt, bool neg)
 {
   EncodedPtxt eptxt;
   ptxt.encode(eptxt);
   addConstant(eptxt, neg);
 }
+#endif
 
 void Ctxt::addConstant(const EncodedPtxt& eptxt, bool neg)
 {
@@ -2965,7 +2980,7 @@ void innerProduct(Ctxt& result,
 // the zzParts std::vector, as a vector of ZZX'es.
 // Returns an estimate for the scaled noise (not including the
 // additive mod switching noise)
-
+#ifndef BIGINT_P
 double Ctxt::rawModSwitch(std::vector<NTL::ZZX>& zzParts, long q) const
 {
   // Ensure that new modulus is co-prime with plaintext space
@@ -3068,6 +3083,7 @@ double Ctxt::rawModSwitch(std::vector<NTL::ZZX>& zzParts, long q) const
   return scaledNoise;
   // this is returned so that caller in recryption.cpp can check bounds
 }
+#endif
 
 void Ctxt::addedNoiseForCKKSDecryption(const SecKey& sk,
                                        double eps,
@@ -3143,6 +3159,7 @@ void extractRealPart(Ctxt& c)
   c *= 0.5;
 }
 
+#ifndef BIGINT_P
 void extractImPart(Ctxt& c)
 {
   Ctxt tmp = c;
@@ -3153,5 +3170,6 @@ void extractImPart(Ctxt& c)
 
   c *= halfI;
 }
+#endif
 
 } // namespace helib

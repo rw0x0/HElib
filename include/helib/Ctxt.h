@@ -617,6 +617,7 @@ public:
   void addConstant(const DoubleCRT& dcrt, double size = -1.0);
   void addConstant(const NTL::ZZX& poly, double size = -1.0);
 
+#ifndef BIGINT_P
   /**
    * @brief Add a plaintext to this `Ctxt`.
    * @param ptxt Plaintext `Ptxt` object with which to add.
@@ -635,6 +636,7 @@ public:
     addConstant(ptxt);
     return *this;
   }
+#endif
 
   template <typename Scheme>
   Ctxt& operator-=(const Ptxt<Scheme>& ptxt)
@@ -643,6 +645,7 @@ public:
     return *this;
   }
 
+#ifndef BIGINT_P
   //! add a rational number in the form a/b, a,b are long
   /**
    * @deprecated This function is deprecated in favor of a newer API.
@@ -709,7 +712,7 @@ public:
   [[deprecated(
       "Please use Ctxt::operator+=(const NTL::ZZ& ptxt) instead.")]] void
   addConstantCKKS(const NTL::ZZ& c);
-
+#endif
   //! Multiply-by-constant.
   //! If the size is not given, for the DCRT variant, we use
   //! a high probability bound assuming "random" coefficients
@@ -1071,7 +1074,7 @@ private: // impl only
 
 public:
   //==================================================
-
+#ifndef BIGINT_P
   /**
    * @brief Multiply a plaintext to this `Ctxt`.
    * @param ptxt Plaintext `Ptxt` object with which to multiply.
@@ -1090,6 +1093,7 @@ public:
     multByConstant(ptxt);
     return *this;
   }
+#endif
 
   //! multiply by a rational number or floating point
   /**
@@ -1380,7 +1384,6 @@ public:
   const NTL::xdouble& getPtxtMag() const { return ptxtMag; }
   void setPtxtMag(const NTL::xdouble& z) { ptxtMag = z; }
   long getKeyID() const;
-
   bool isCKKS() const { return getContext().isCKKS(); }
 
   // Return r such that p^r = ptxtSpace

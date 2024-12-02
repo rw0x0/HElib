@@ -17,6 +17,7 @@
 #include <helib/Ctxt.h>
 #include <helib/EncryptedArray.h>
 
+#ifndef BIGINT_P
 namespace helib {
 
 SecKey* dbgKey = nullptr;
@@ -209,3 +210,5 @@ void CheckCtxt(const Ctxt& c, const char* label)
 }
 
 } // namespace helib
+
+#endif

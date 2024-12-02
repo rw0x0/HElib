@@ -1463,6 +1463,15 @@ void ppsolve(NTL::vec_zz_pE& x,
   assertEq(x * A, b, "Failed to found solution x to matrix equation x*A == b");
 }
 
+void ppsolve(NTL::vec_zz_pE& x,
+             const NTL::mat_zz_pE& A,
+             const NTL::vec_zz_pE& b,
+             const NTL::ZZ& p,
+             long r) {
+
+    assertTrue(false, "ppsolve: not implemented for zz_pE");
+             }
+
 void ppsolve(NTL::vec_GF2E& x,
              const NTL::mat_GF2E& A,
              const NTL::vec_GF2E& b,
@@ -1547,6 +1556,10 @@ void ppInvert(NTL::mat_zz_pE& X, const NTL::mat_zz_pE& A, long p, long r)
            "where I is the identity matrix");
 }
 
+void ppInvert(NTL::mat_zz_p& X, const NTL::mat_zz_p& A, const NTL::ZZ& p, long r) {
+    assertTrue(false, "ppInvert: not implemented for zz_pE");
+}
+
 // FIXME: at some point need to make a template for these two functions
 // prime power solver
 // A is an n x n matrix, we compute its inverse mod p^r. An error is raised
@@ -1606,6 +1619,10 @@ void ppInvert(NTL::mat_zz_p& X, const NTL::mat_zz_p& A, long p, long r)
            I,
            "Failed to found solution X to matrix equation X*A == I "
            "where I is the identity matrix");
+}
+
+void ppInvert(NTL::mat_zz_pE& X, const NTL::mat_zz_pE& A, const NTL::ZZ& p, long r) {
+    assertTrue(false, "ppInvert: not implemented for zz_pE");
 }
 
 void buildLinPolyCoeffs(NTL::vec_zz_pE& C_out,
