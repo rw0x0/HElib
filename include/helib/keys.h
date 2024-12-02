@@ -98,7 +98,7 @@ public:
 
   // Access methods
   const Context& getContext() const;
-  long getPtxtSpace() const;
+  NTL::ZZ getPtxtSpace() const;
   bool keyExists(long keyID) const;
 
   //! @brief The size of the secret key
@@ -169,18 +169,18 @@ public:
    * of the new `EncodedPtxt`-based routine.\n
    * Please use `PtxtArray::encrypt()` instead.
    **/
-  long Encrypt(Ctxt& ciphertxt,
+  NTL::ZZ Encrypt(Ctxt& ciphertxt,
                const NTL::ZZX& plaintxt,
-               long ptxtSpace,
+               NTL::ZZ& ptxtSpace,
                bool highNoise) const;
   /**
    * @deprecated This routine has a number of issues and is deprecated in favor
    * of the new `EncodedPtxt`-based routine.\n
    * Please use `PtxtArray::encrypt()` instead.
    **/
-  long Encrypt(Ctxt& ciphertxt,
+  NTL::ZZ Encrypt(Ctxt& ciphertxt,
                const zzX& plaintxt,
-               long ptxtSpace,
+               NTL::ZZ& ptxtSpace,
                bool highNoise) const;
 
   /**
@@ -203,12 +203,12 @@ public:
                    double scaling = 0.0) const;
 
   // These methods are overridden by secret-key Encrypt
-  virtual long Encrypt(Ctxt& ciphertxt,
+  virtual NTL::ZZ Encrypt(Ctxt& ciphertxt,
                        const NTL::ZZX& plaintxt,
-                       long ptxtSpace = 0) const;
-  virtual long Encrypt(Ctxt& ciphertxt,
+                       NTL::ZZ ptxtSpace = NTL::ZZ(0)) const;
+  virtual NTL::ZZ Encrypt(Ctxt& ciphertxt,
                        const zzX& plaintxt,
-                       long ptxtSpace = 0) const;
+                       NTL::ZZ ptxtSpace = NTL::to_ZZ(0)) const;
 
   /**
    * @brief Encrypts a plaintext into a ciphertext.
@@ -348,12 +348,12 @@ public:
   //! It is assumed that the context already contains all parameters.
   long ImportSecKey(const DoubleCRT& sKey,
                     double bound,
-                    long ptxtSpace = 0,
+                    NTL::ZZ ptxtSpace = NTL::ZZ(0),
                     long maxDegKswitch = 3);
 
   //! Key generation: This procedure generates a single secret key,
   //! pushes it onto the sKeys list using ImportSecKey from above.
-  long GenSecKey(long ptxtSpace = 0, long maxDegKswitch = 3);
+  long GenSecKey(NTL::ZZ ptxtSpace = NTL::ZZ(0), long maxDegKswitch = 3);
 
   //! Generate a key-switching matrix and store it in the public key. The i'th
   //! column of the matrix encrypts fromKey*B1*B2*...*B{i-1}*Q under toKey,
@@ -365,7 +365,7 @@ public:
                       long fromXPower,
                       long fromKeyIdx = 0,
                       long toKeyIdx = 0,
-                      long ptxtSpace = 0);
+                      NTL::ZZ ptxtSpace = NTL::ZZ(0));
 
   // Decryption
   void Decrypt(NTL::ZZX& plaintxt, const Ctxt& ciphertxt) const;
@@ -389,19 +389,19 @@ public:
   void Decrypt(NTL::ZZX& plaintxt, const Ctxt& ciphertxt, NTL::ZZX& f) const;
 
   //! @brief Symmetric encryption using the secret key.
-  long skEncrypt(Ctxt& ctxt,
+  NTL::ZZ skEncrypt(Ctxt& ctxt,
                  const NTL::ZZX& ptxt,
-                 long ptxtSpace,
+                 NTL::ZZ& ptxtSpace,
                  long skIdx) const;
-  long skEncrypt(Ctxt& ctxt, const zzX& ptxt, long ptxtSpace, long skIdx) const;
+  NTL::ZZ skEncrypt(Ctxt& ctxt, const zzX& ptxt, NTL::ZZ& ptxtSpace, long skIdx) const;
 
   // These methods override the public-key Encrypt methods
-  long Encrypt(Ctxt& ciphertxt,
+  NTL::ZZ Encrypt(Ctxt& ciphertxt,
                const NTL::ZZX& plaintxt,
-               long ptxtSpace = 0) const override;
-  long Encrypt(Ctxt& ciphertxt,
+               NTL::ZZ ptxtSpace = NTL::ZZ(0)) const override;
+  NTL::ZZ Encrypt(Ctxt& ciphertxt,
                const zzX& plaintxt,
-               long ptxtSpace = 0) const override;
+               NTL::ZZ ptxtSpace = NTL::ZZ(0)) const override;
 
   //=============== new EncodedPtxt interface ==================
 
@@ -516,11 +516,11 @@ public:
 double RLWE(DoubleCRT& c0,
             DoubleCRT& c1,
             const DoubleCRT& s,
-            long p,
+            NTL::ZZ& p,
             NTL::ZZ* prgSeed = nullptr);
 
 //! Same as RLWE, but assumes that c1 is already chosen by the caller
-double RLWE1(DoubleCRT& c0, const DoubleCRT& c1, const DoubleCRT& s, long p);
+double RLWE1(DoubleCRT& c0, const DoubleCRT& c1, const DoubleCRT& s, NTL::ZZ& p);
 
 } // namespace helib
 

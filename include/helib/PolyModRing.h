@@ -44,7 +44,7 @@ struct PolyModRing
   /**
    * @brief The characteristic of the plaintext space.  This should be prime.
    **/
-  const long p;
+  const NTL::ZZ p;
   /**
    * @brief The power of p used in the plaintext space coefficient modulus.
    **/
@@ -57,7 +57,7 @@ struct PolyModRing
   /**
    * @brief The plaintext space coefficient modulus, equal to p^r.
    **/
-  const long p2r;
+  const NTL::ZZ p2r;
 
   // Delete the default constructor.
   PolyModRing() = delete;
@@ -92,7 +92,7 @@ struct PolyModRing
    *
    * @note p should be a prime number.
    **/
-  PolyModRing(long p, long r, const NTL::ZZX& G);
+  PolyModRing(const NTL::ZZ& p, long r, const NTL::ZZX& G);
 
   /**
    * @brief Equality operator.

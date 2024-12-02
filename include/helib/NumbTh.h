@@ -133,6 +133,7 @@ long bitSetToLong(long bits, long bitSize);
 //! in particular, mcMod(a, b) is 0 or has the same sign as b
 
 long mcMod(long a, long b);
+NTL::ZZ mcMod_ZZ(NTL::ZZ& a, NTL::ZZ& b);
 long mcDiv(long a, long b);
 
 //! Return balanced remainder. Assumes a in [0, q) and returns
@@ -145,11 +146,22 @@ inline long balRem(long a, long q)
     return a;
 }
 
+//! Return balanced remainder. Assumes a in [0, q) and returns
+//! balanced remainder in (-q/2, q/2]
+inline NTL::ZZ balRem_ZZ(NTL::ZZ& a, NTL::ZZ& q)
+{
+  if (a > q / 2)
+    return a - q;
+  else
+    return a;
+}
+
 //! Return the square of a number as a double
 inline double fsquare(double x) { return x * x; }
 
 //! Return multiplicative order of p modulo m, or 0 if GCD(p, m) != 1
 long multOrd(long p, long m);
+long multOrd(const NTL::ZZ& p, const NTL::ZZ& m);
 
 //! @brief Prime power solver.
 //!
@@ -162,14 +174,14 @@ long multOrd(long p, long m);
 void ppsolve(NTL::vec_zz_pE& x,
              const NTL::mat_zz_pE& A,
              const NTL::vec_zz_pE& b,
-             long p,
+             const NTL::ZZ& p,
              long r);
 
 //! @brief A version for GF2: must have p == 2 and r == 1
 void ppsolve(NTL::vec_GF2E& x,
              const NTL::mat_GF2E& A,
              const NTL::vec_GF2E& b,
-             long p,
+             const NTL::ZZ& p,
              long r);
 
 //! @brief Compute the inverse mod p^r of an n x n matrix.
@@ -178,12 +190,22 @@ void ppsolve(NTL::vec_GF2E& x,
 //! p prime, r >= 1 integer. For the zz_pE variant also zz_pE::modulus() must
 //! be initialized. An error is raised if A is not invertible mod p.
 void ppInvert(NTL::mat_zz_p& X, const NTL::mat_zz_p& A, long p, long r);
+void ppInvert(NTL::mat_zz_p& X, const NTL::mat_zz_p& A, const NTL::ZZ& p, long r);
 void ppInvert(NTL::mat_zz_pE& X, const NTL::mat_zz_pE& A, long p, long r);
+void ppInvert(NTL::mat_zz_pE& X, const NTL::mat_zz_pE& A, const NTL::ZZ& p, long r);
 
 // variants for GF2/GF2E to help with template code
 inline void ppInvert(NTL::mat_GF2& X,
                      const NTL::mat_GF2& A,
                      UNUSED long p,
+                     UNUSED long r)
+{
+  NTL::inv(X, A);
+}
+
+inline void ppInvert(NTL::mat_GF2& X,
+                     const NTL::mat_GF2& A,
+                     UNUSED const NTL::ZZ& p,
                      UNUSED long r)
 {
   NTL::inv(X, A);
@@ -197,8 +219,19 @@ inline void ppInvert(NTL::mat_GF2E& X,
   NTL::inv(X, A);
 }
 
+inline void ppInvert(NTL::mat_GF2E& X,
+                     const NTL::mat_GF2E& A,
+                     UNUSED const NTL::ZZ& p,
+                     UNUSED long r)
+{
+  NTL::inv(X, A);
+}
+
+
 void buildLinPolyMatrix(NTL::mat_zz_pE& M, long p);
+void buildLinPolyMatrix(NTL::mat_zz_pE& M, const NTL::ZZ& p);
 void buildLinPolyMatrix(NTL::mat_GF2E& M, long p);
+void buildLinPolyMatrix(NTL::mat_GF2E& M, const NTL::ZZ& p);
 
 //! @brief Combination of buildLinPolyMatrix and ppsolve.
 //!
@@ -209,13 +242,13 @@ void buildLinPolyMatrix(NTL::mat_GF2E& M, long p);
 //! for p prime, r >= 1 integer.
 void buildLinPolyCoeffs(NTL::vec_zz_pE& C,
                         const NTL::vec_zz_pE& L,
-                        long p,
+                        const NTL::ZZ& p,
                         long r);
 
 //! @brief A version for GF2: must be called with p == 2 and r == 1
 void buildLinPolyCoeffs(NTL::vec_GF2E& C,
                         const NTL::vec_GF2E& L,
-                        long p,
+                        const NTL::ZZ& p,
                         long r);
 
 //! @brief Apply a linearized polynomial with coefficient vector C.
@@ -260,7 +293,7 @@ long phi_N(long N);
 long findGenerators(std::vector<long>& gens,
                     std::vector<long>& ords,
                     long m,
-                    long p,
+                    NTL::ZZ& p,
                     const std::vector<long>& candidates = std::vector<long>());
 
 //! Find e-th root of unity modulo the current modulus.
@@ -337,6 +370,7 @@ void vecRed(NTL::Vec<NTL::ZZ>& out,
 // "deprecated" warning.
 
 void MulMod(NTL::ZZX& out, const NTL::ZZX& f, long a, long q, bool abs);
+void MulMod(NTL::ZZX& out, const NTL::ZZX& f, NTL::ZZ& a, NTL::ZZ& q, bool abs);
 
 [[deprecated("Please use MulMod with explicit abs argument.")]] inline void
 MulMod(NTL::ZZX& out, const NTL::ZZX& f, long a, long q)
@@ -362,6 +396,7 @@ MulMod(const NTL::ZZX& f, long a, long q)
 //! Multiply the polynomial f by the integer a modulo q
 //! output coefficients are balanced (appropriately randomized for even q)
 void balanced_MulMod(NTL::ZZX& out, const NTL::ZZX& f, long a, long q);
+void balanced_MulMod(NTL::ZZX& out, const NTL::ZZX& f, NTL::ZZ& a, NTL::ZZ& q);
 
 ///@{
 //! @name Some enhanced conversion routines

@@ -181,7 +181,7 @@ public:
    * @brief Get current p^r value.
    * @return The current p^r value in use.
    **/
-  long getp2r() const;
+  NTL::ZZ getp2r() const;
 
   /**
    * @brief Get current G value.

@@ -22,15 +22,15 @@ class EncodedPtxt_BGV
 
 private:
   zzX poly;
-  long ptxtSpace;
+  NTL::ZZ ptxtSpace;
   const Context& context;
 
 public:
   const zzX& getPoly() const { return poly; }
-  long getPtxtSpace() const { return ptxtSpace; }
+  NTL::ZZ getPtxtSpace() const { return ptxtSpace; }
   const Context& getContext() const { return context; }
 
-  EncodedPtxt_BGV(const zzX& poly_, long ptxtSpace_, const Context& context_) :
+  EncodedPtxt_BGV(const zzX& poly_, NTL::ZZ ptxtSpace_, const Context& context_) :
       poly(poly_), ptxtSpace(ptxtSpace_), context(context_)
   {}
 };
@@ -161,7 +161,7 @@ public:
     return rep->getCKKS();
   }
 
-  void resetBGV(const zzX& poly, long ptxtSpace, const Context& context)
+  void resetBGV(const zzX& poly, NTL::ZZ& ptxtSpace, const Context& context)
   {
     rep.reset(new EncodedPtxt_derived_BGV(poly, ptxtSpace, context));
   }
@@ -187,12 +187,12 @@ class FatEncodedPtxt_BGV
 
 private:
   DoubleCRT dcrt;
-  long ptxtSpace;
+  NTL::ZZ ptxtSpace;
   double size;
 
 public:
   const DoubleCRT& getDCRT() const { return dcrt; }
-  long getPtxtSpace() const { return ptxtSpace; }
+  NTL::ZZ getPtxtSpace() const { return ptxtSpace; }
   const Context& getContext() const { return dcrt.getContext(); }
   double getSize() const { return size; }
 
@@ -203,7 +203,7 @@ public:
                                  eptxt.getContext().getZMStar()))
   {}
 
-  FatEncodedPtxt_BGV(const DoubleCRT& dcrt_, long ptxtSpace_, double size_) :
+  FatEncodedPtxt_BGV(const DoubleCRT& dcrt_, NTL::ZZ ptxtSpace_, double size_) :
       dcrt(dcrt_), ptxtSpace(ptxtSpace_), size(size_)
   {}
 };

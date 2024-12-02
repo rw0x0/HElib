@@ -74,7 +74,8 @@ void extractDigits(std::vector<Ctxt>& digits, const Ctxt& c, long r)
   if (r <= 0 || r > rr)
     r = rr; // how many digits to extract
 
-  long p = context.getP();
+  long p = NTL::to_long(context.getP());
+  assertEq(NTL::ZZ(p), context.getP(), "p must fit into a long");
 
   NTL::ZZX x2p;
   if (p > 3) {
@@ -229,7 +230,8 @@ void extendExtractDigits(std::vector<Ctxt>& digits,
 {
   const Context& context = c.getContext();
 
-  long p = context.getP();
+  long p = NTL::to_long(context.getP());
+  assertEq(NTL::ZZ(p), context.getP(), "p must fit into a long");
   NTL::ZZX x2p;
   if (p > 3) {
     buildDigitPolynomial(x2p, p, r);

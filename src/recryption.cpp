@@ -86,7 +86,9 @@ static void newMakeDivisible(NTL::ZZX& poly,
 
   assertEq<InvalidArgument>(q % p2e, 1l, "q must equal 1 modulo p2e");
 
-  long p = context.getP();
+  NTL::ZZ p_ = context.getP();
+  long p = NTL::to_long(p_);
+  assertEq(p_, NTL::ZZ(p), "p must be a long");
 
   const RecryptData& rcData = context.getRcData();
   const PowerfulDCRT& p2d_conv = *rcData.p2dConv;
@@ -203,8 +205,12 @@ void RecryptData::setAE(long& e, long& ePrime, const Context& context)
   // coeff_bound is ultimately a high prob bound on |w0+w1*s|,
   // the coeffs of w0, w1 are chosen uniformly on [-1/2,1/2]
 
-  long p = context.getP();
-  long p2r = context.getAlMod().getPPowR();
+  NTL::ZZ p_ = context.getP();
+  long p = NTL::to_long(p_);
+  assertEq(p_, NTL::ZZ(p), "p must be a long");
+  NTL::ZZ p2r_ = context.getAlMod().getPPowR();
+  long p2r = NTL::to_long(p2r_);
+  assertEq(p2r_, NTL::ZZ(p2r), "p2r_ must be a long");
   long r = context.getAlMod().getR();
   long frstTerm = 2 * p2r + 2;
 
@@ -369,7 +375,9 @@ void PubKey::reCrypt(Ctxt& ctxt) const
   HELIB_TIMER_START;
 
   // Some sanity checks for dummy ciphertext
-  long ptxtSpace = ctxt.getPtxtSpace();
+  NTL::ZZ ptxtSpace_ = ctxt.getPtxtSpace();
+  long ptxtSpace = NTL::to_long(ptxtSpace_);
+  assertEq(ptxtSpace_, NTL::ZZ(ptxtSpace), "ptxtSpace must be a long");
   if (ctxt.isEmpty())
     return;
   if (ctxt.parts.size() == 1 && ctxt.parts[0].skHandle.isOne()) {
@@ -385,11 +393,17 @@ void PubKey::reCrypt(Ctxt& ctxt) const
   // check that we have bootstrapping data
   assertTrue(recryptKeyID >= 0l, "No bootstrapping data");
 
-  long p = getContext().getP();
+  NTL::ZZ p_ = context.getP();
+  long p = NTL::to_long(p_);
+  assertEq(p_, NTL::ZZ(p), "p must be a long");
+  NTL::ZZ p2r_ = context.getAlMod().getPPowR();
+  long p2r = NTL::to_long(p2r_);
+  assertEq(p2r_, NTL::ZZ(p2r), "p2r_ must be a long");
   long r = getContext().getAlMod().getR();
-  long p2r = getContext().getAlMod().getPPowR();
 
-  long intFactor = ctxt.intFactor;
+  NTL::ZZ intFactor_ = ctxt.intFactor;
+  long intFactor = NTL::to_long(p_);
+  assertEq(intFactor_, NTL::ZZ(intFactor), "intFactor must be a long");
 
   // the bootstrapping key is encrypted relative to plaintext space p^{e-e'+r}.
   const RecryptData& rcData = getContext().getRcData();
@@ -541,7 +555,7 @@ void PubKey::reCrypt(Ctxt& ctxt) const
 
   // restore intFactor
   if (intFactor != 1)
-    ctxt.intFactor = NTL::MulMod(ctxt.intFactor, intFactor, ptxtSpace);
+    ctxt.intFactor = NTL::MulMod(ctxt.intFactor, intFactor, NTL::ZZ(ptxtSpace));
 }
 
 #ifdef HELIB_BOOT_THREADS
@@ -735,7 +749,8 @@ void packedRecrypt(const CtPtrs& cPtrs,
   repack(CtPtrs_vectorCt(cts), cPtrs, ea); // pack ciphertexts
   //  cout << "@"<< lsize(cts)<<std::flush;
   for (Ctxt& c : cts) {   // then recrypt them
-    c.reducePtxtSpace(2); // we only have recryption data for binary ctxt
+    auto pt = NTL::ZZ(2);
+    c.reducePtxtSpace(pt); // we only have recryption data for binary ctxt
     pKey.reCrypt(c);
   }
   unpack(cPtrs, CtPtrs_vectorCt(cts), ea, unpackConsts);
@@ -799,7 +814,9 @@ void extractDigitsThin(Ctxt& ctxt, long botHigh, long r, long ePrime)
 
   std::vector<Ctxt> scratch;
 
-  long p = ctxt.getContext().getP();
+  NTL::ZZ p_= ctxt.getContext().getP();
+  long p = NTL::to_long(p_);
+  assertEq(p_, NTL::ZZ(p), "p must be a long");
   long p2r = NTL::power_long(p, r);
   long topHigh = botHigh + r - 1;
 
@@ -867,7 +884,8 @@ void extractDigitsThin(Ctxt& ctxt, long botHigh, long r, long ePrime)
         tmp.multByP(ePrime); // multiply by p^e'
       unpacked += tmp;
     }
-    unpacked.reducePtxtSpace(p2r); // Our plaintext space is now mod p^r
+    auto p2r_ = NTL::ZZ(p2r);
+    unpacked.reducePtxtSpace(p2r_); // Our plaintext space is now mod p^r
 
     ctxt = unpacked;
   } else {
@@ -903,7 +921,8 @@ void extractDigitsThin(Ctxt& ctxt, long botHigh, long r, long ePrime)
         tmp.multByP(ePrime); // multiply by p^e'
       unpacked += tmp;
     }
-    unpacked.reducePtxtSpace(p2r); // Our plaintext space is now mod p^r
+    auto p2r_ = NTL::ZZ(p2r);
+    unpacked.reducePtxtSpace(p2r_); // Our plaintext space is now mod p^r
     ctxt = unpacked;
   }
 }
@@ -942,7 +961,9 @@ void PubKey::thinReCrypt(Ctxt& ctxt) const
   HELIB_TIMER_START;
 
   // Some sanity checks for dummy ciphertext
-  long ptxtSpace = ctxt.getPtxtSpace();
+  NTL::ZZ ptxtSpace_ = ctxt.getPtxtSpace();
+  long ptxtSpace = NTL::to_long(ptxtSpace_);
+  assertEq(ptxtSpace_, NTL::ZZ(ptxtSpace), "ptxtSpace must be a long");
   if (ctxt.isEmpty())
     return;
 
@@ -959,11 +980,17 @@ void PubKey::thinReCrypt(Ctxt& ctxt) const
   // check that we have bootstrapping data
   assertTrue(recryptKeyID >= 0l, "Bootstrapping data not present");
 
-  long p = ctxt.getContext().getP();
+  NTL::ZZ p_ = ctxt.getContext().getP();
+  long p = NTL::to_long(p_);
+  assertEq(p_, NTL::ZZ(p), "p must be a long");
+  NTL::ZZ p2r_ = ctxt.getContext().getAlMod().getPPowR();
+  long p2r = NTL::to_long(p2r_);
+  assertEq(p2r_, NTL::ZZ(p2r), "p2r_ must be a long");
   long r = ctxt.getContext().getAlMod().getR();
-  long p2r = ctxt.getContext().getAlMod().getPPowR();
 
-  long intFactor = ctxt.intFactor;
+  NTL::ZZ intFactor_ = ctxt.intFactor;
+  long intFactor = NTL::to_long(p_);
+  assertEq(intFactor_, NTL::ZZ(intFactor), "intFactor must be a long");
 
   const ThinRecryptData& trcData = ctxt.getContext().getRcData();
 
@@ -1123,8 +1150,10 @@ void PubKey::thinReCrypt(Ctxt& ctxt) const
 #endif
 
   // restore intFactor
-  if (intFactor != 1)
-    ctxt.intFactor = NTL::MulMod(ctxt.intFactor, intFactor, ptxtSpace);
+  if (intFactor != 1) {
+    auto ptxtSpace_ = NTL::ZZ(ptxtSpace);
+    ctxt.intFactor = NTL::MulMod(ctxt.intFactor, intFactor, ptxtSpace_);
+  }
 }
 
 #ifdef HELIB_DEBUG

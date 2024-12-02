@@ -102,8 +102,9 @@ std::set<long>* FHEglobals::automorphVals2 = nullptr;
 
 long Ctxt::effectiveR() const
 {
-  long p = context.getP();
-  for (long r = 1, p2r = p; r < HELIB_SP_NBITS; r++, p2r *= p) {
+  NTL::ZZ p = context.getP();
+  NTL::ZZ p2r = p;
+  for (long r = 1; r < HELIB_SP_NBITS; r++, p2r *= p) {
     if (p2r == ptxtSpace)
       return r;
     if (p2r > ptxtSpace)
@@ -157,16 +158,19 @@ void Ctxt::DummyEncrypt(const NTL::ZZX& ptxt, double size)
   primeSet = context.getCtxtPrimes();
 
   // A single part, with the plaintext as data and handle pointing to 1
+  NTL::ZZ f;
+  if (isCKKS()) {
+    f = 1;
+  } else {
+     rem(f, context.productOfPrimes(context.getCtxtPrimes()), ptxtSpace);
+  }
 
-  long f = isCKKS() ? 1
-                    : rem(context.productOfPrimes(context.getCtxtPrimes()),
-                          ptxtSpace);
   if (f == 1) {
     DoubleCRT dcrt(ptxt, context, primeSet);
     parts.assign(1, CtxtPart(dcrt));
   } else {
     NTL::ZZX tmp;
-    MulMod(tmp, ptxt, f, ptxtSpace, /*positive=*/false);
+    MulMod(tmp, ptxt, long(0), long(0), /*positive=*/false);
     DoubleCRT dcrt(tmp, context, primeSet);
     parts.assign(1, CtxtPart(dcrt));
   }
@@ -275,7 +279,7 @@ bool Ctxt::equalsTo(const Ctxt& other, bool comparePkeys) const
 }
 
 // Constructor
-Ctxt::Ctxt(const PubKey& newPubKey, long newPtxtSpace) :
+Ctxt::Ctxt(const PubKey& newPubKey, NTL::ZZ newPtxtSpace) :
     context(newPubKey.getContext()),
     pubKey(newPubKey),
     ptxtSpace(newPtxtSpace),
@@ -285,7 +289,7 @@ Ctxt::Ctxt(const PubKey& newPubKey, long newPtxtSpace) :
     ptxtSpace = pubKey.getPtxtSpace();
   } else {
     // sanity check
-    assertTrue(NTL::GCD(ptxtSpace, pubKey.getPtxtSpace()) > 1,
+    assertTrue(bool(NTL::GCD(ptxtSpace, pubKey.getPtxtSpace()) > 1),
                "Ptxt spaces from ciphertext and public key are coprime");
   }
   primeSet = context.getCtxtPrimes();
@@ -328,15 +332,15 @@ Ctxt& Ctxt::privateAssign(const Ctxt& other)
 
 // explicitly multiply intFactor by e, which should be
 // in the interval [0, ptxtSpace)
-void Ctxt::mulIntFactor(long e)
+void Ctxt::mulIntFactor(NTL::ZZ e)
 {
   if (e == 1)
     return; // nothing to do
   intFactor = NTL::MulMod(intFactor, e, ptxtSpace);
-  long bal_e = balRem(e, ptxtSpace);
+  auto bal_e = balRem_ZZ(e, ptxtSpace);
   for (auto& part : parts)
     part *= bal_e;
-  noiseBound *= std::abs(bal_e); // because every part was scaled by bal_e
+  noiseBound *= NTL::to_xdouble(NTL::abs(bal_e)); // because every part was scaled by bal_e
 }
 
 // Ciphertext maintenance
@@ -454,9 +458,9 @@ void Ctxt::modDownToSet(const IndexSet& s)
     // For BGV we keep the invariant that a ciphertext mod Q is
     // decrypted to intFactor*Q*m (mod p), so if we just "drop down" by
     // a factor F we still need to multiply intFactor by (F mod p).
-    long F = 1;
+    NTL::ZZ F = NTL::to_ZZ(1);
     if (ptxtSpace > 1)
-      F = rem(context.productOfPrimes(setDiff), ptxtSpace);
+      rem(F, context.productOfPrimes(setDiff), ptxtSpace);
     if (F > 1)
       intFactor = NTL::MulMod(intFactor, F, ptxtSpace);
     Warning("Ctxt::modDownToSet: DEGENERATE DROP");
@@ -479,7 +483,7 @@ void Ctxt::modDownToSet(const IndexSet& s)
             NTL::conv<double>(NTL::conv<NTL::xdouble>(delta.rep[j]) / xdiff);
 
         // sanity check: |fdelta[j]| <= ptxtSpace/2
-        if (std::fabs(fdelta[j]) > double(ptxtSpace) / 2.0 + 0.0001) {
+        if (std::fabs(fdelta[j]) > NTL::to_double(ptxtSpace) / 2.0 + 0.0001) {
           std::stringstream ss;
           ss << "\n***Bad modSwitch: diff =" << std::fabs(fdelta[j])
              << ", ptxtSpace=" << ptxtSpace;
@@ -573,12 +577,12 @@ void Ctxt::blindCtxt(const NTL::ZZX& poly)
 }
 
 // Reduce plaintext space to a divisor of the original plaintext space
-void Ctxt::reducePtxtSpace(long newPtxtSpace)
+void Ctxt::reducePtxtSpace(NTL::ZZ& newPtxtSpace)
 {
-  long g = NTL::GCD(ptxtSpace, newPtxtSpace);
+  auto g = NTL::GCD(ptxtSpace, newPtxtSpace);
 
   // NOTE: Will trigger an error if called for CKKS ciphertext
-  assertTrue(g > 1, "New and old plaintext spaces are coprime");
+  assertTrue(bool(g > 1), "New and old plaintext spaces are coprime");
   ptxtSpace = g;
   intFactor %= g;
 }
@@ -745,7 +749,7 @@ void Ctxt::reLinearize(long keyID)
 
   relin_CKKS_adjust();
 
-  long g = ptxtSpace;
+  auto g = ptxtSpace;
   double logProd = context.logOfProduct(context.getSpecialPrimes());
 
   Ctxt tmp(pubKey, ptxtSpace); // an empty ciphertext, same plaintext space
@@ -775,7 +779,8 @@ void Ctxt::reLinearize(long keyID)
     assertTrue(W.toKeyID >= 0, "No key-switching matrix exists");
 
     if (g > 1) { // g==1 for CKKS, g>1 for BGV
-      tmp.reducePtxtSpace(W.ptxtSpace);
+      NTL::ZZ ptxt_space = W.ptxtSpace;
+      tmp.reducePtxtSpace(ptxt_space);
       g = tmp.ptxtSpace;
       // VJS-NOTE: fixes a bug where intFactor was not corrected
     }
@@ -910,14 +915,14 @@ void Ctxt::addConstant(const DoubleCRT& dcrt, double size)
     size = context.noiseBoundForMod(ptxtSpace, context.getPhiM());
 
   // Scale the constant, then add it to the part that points to one
-  long f = 1;
+  NTL::ZZ f = NTL::to_ZZ(1);
   if (ptxtSpace > 2) {
-    f = rem(context.productOfPrimes(primeSet), ptxtSpace);
+    rem(f, context.productOfPrimes(primeSet), ptxtSpace);
     f = NTL::MulMod(intFactor, f, ptxtSpace);
-    f = balRem(f, ptxtSpace);
+    f = balRem_ZZ(f, ptxtSpace);
   }
 
-  noiseBound += size * std::abs(f);
+  noiseBound += size * NTL::to_xdouble(NTL::abs(f));
 
   // VJS-NOTE: addPart will raise an exception
   // if the prime set of dcrt does not contain
@@ -968,10 +973,10 @@ void Ctxt::addConstantCKKS(const DoubleCRT& dcrt,
       std::abs(NTL::conv<double>(ratio * factor / ratFactor) - 1.0);
 
 #if 0
-  std::cerr << "=== ratFactor=" << ratFactor 
+  std::cerr << "=== ratFactor=" << ratFactor
             << " factor=" << factor
             << "\n";
-  std::cerr << "*** ratio=" << ratio 
+  std::cerr << "*** ratio=" << ratio
             << " log2(inaccuracy)=" << std::log2(inaccuracy)
             << "\n";
 #endif
@@ -1395,11 +1400,11 @@ void Ctxt::equalizeRationalFactors(Ctxt& c1, Ctxt& c2)
 
 static NTL::xdouble NoiseNorm(NTL::xdouble noise1,
                               NTL::xdouble noise2,
-                              long e1,
-                              long e2,
-                              long p)
+                              NTL::ZZ& e1,
+                              NTL::ZZ& e2,
+                              NTL::ZZ p)
 {
-  return noise1 * std::abs(balRem(e1, p)) + noise2 * std::abs(balRem(e2, p));
+  return noise1 * NTL::to_xdouble(NTL::abs(balRem_ZZ(e1, p))) + noise2 * NTL::to_xdouble(NTL::abs(balRem_ZZ(e2, p)));
 }
 
 // Add/subtract another ciphertext (depending on the negative flag)
@@ -1427,10 +1432,12 @@ void Ctxt::addCtxt(const Ctxt& other, bool negative)
 
   // Verify that the plaintext spaces are compatible
   if (isCKKS()) {
-    assertEq(getPtxtSpace(), 1l, "Plaintext spaces incompatible");
-    assertEq(other.getPtxtSpace(), 1l, "Plaintext spaces incompatible");
-  } else // BGV
-    this->reducePtxtSpace(other.getPtxtSpace());
+    assertEq(getPtxtSpace(), NTL::ZZ(1), "Plaintext spaces incompatible");
+    assertEq(other.getPtxtSpace(), NTL::ZZ(1), "Plaintext spaces incompatible");
+  } else {// BGV
+    NTL::ZZ plaintext_space = other.getPtxtSpace();
+    this->reducePtxtSpace(plaintext_space);
+  }
 
   const Ctxt* other_pt = &other;
 
@@ -1471,15 +1478,16 @@ void Ctxt::addCtxt(const Ctxt& other, bool negative)
     }
     equalizeRationalFactors(*this, tmp);
   }
-  long e1 = 1, e2 = 1;
+  NTL::ZZ e1 = NTL::ZZ(1);
+  NTL::ZZ e2 = NTL::ZZ(1);
   if (!isCKKS() && intFactor != other_pt->intFactor) { // harmonize factors
-    long f1 = intFactor;
-    long f2 = other_pt->intFactor;
+    NTL::ZZ f1 = intFactor;
+    NTL::ZZ f2 = other_pt->intFactor;
     // set e1, e2 so that e1*f1 == e2*f2 (mod ptxtSpace),
     // minimizing the increase in noise.
 
     // f2/f1 so equivalently, we want e1 = e2*ratio (mod ptxtSpace)
-    long ratio = NTL::MulMod(f2, NTL::InvMod(f1, ptxtSpace), ptxtSpace);
+    NTL::ZZ ratio = NTL::MulMod(f2, NTL::InvMod(f1, ptxtSpace), ptxtSpace);
 
     NTL::xdouble noise1 = noiseBound;
     NTL::xdouble noise2 = other_pt->noiseBound;
@@ -1487,24 +1495,28 @@ void Ctxt::addCtxt(const Ctxt& other, bool negative)
     // now we run the extended Euclidean on (ptxtSpace, ratio)
     // to generate pairs (r_i, t_i) such that r_i = t_i*ratio (mod ptxtSpace).
 
-    long r0 = ptxtSpace, t0 = 0;
-    long r1 = ratio, t1 = 1;
+    NTL::ZZ r0 = ptxtSpace;
+    NTL::ZZ t0 = NTL::ZZ(0);
+    NTL::ZZ r1 = ratio;
+    NTL::ZZ t1 = NTL::ZZ(1);
 
-    long e1_best = r1, e2_best = t1;
+    NTL::ZZ e1_best = r1;
+    NTL::ZZ e2_best = t1;
     NTL::xdouble noise_best =
         NoiseNorm(noise1, noise2, e1_best, e2_best, ptxtSpace);
-    long p = context.getP();
+    NTL::ZZ p = context.getP();
 
     while (r1 != 0) {
-      long q = r0 / r1;
-      long r2 = r0 % r1;
-      long t2 = t0 - t1 * q;
+      NTL::ZZ q = r0 / r1;
+      NTL::ZZ r2 = r0 % r1;
+      NTL::ZZ t2 = t0 - t1 * q;
       r0 = r1;
       r1 = r2;
       t0 = t1;
       t1 = t2;
 
-      long e1_try = mcMod(r1, ptxtSpace), e2_try = mcMod(t1, ptxtSpace);
+      NTL::ZZ e1_try = mcMod_ZZ(r1, ptxtSpace);
+      NTL::ZZ e2_try = mcMod_ZZ(t1, ptxtSpace);
       if (e1_try % p != 0) {
         NTL::xdouble noise_try =
             NoiseNorm(noise1, noise2, e1_try, e2_try, ptxtSpace);
@@ -1521,8 +1533,8 @@ void Ctxt::addCtxt(const Ctxt& other, bool negative)
     assertEq(NTL::MulMod(e1, f1, ptxtSpace),
              NTL::MulMod(e2, f2, ptxtSpace),
              "e1f1 not equivalent to e2f2 mod p");
-    assertEq(NTL::GCD(e1, ptxtSpace), 1l, "e1 and ptxtSpace not co-prime");
-    assertEq(NTL::GCD(e2, ptxtSpace), 1l, "e2 and ptxtSpace not co-prime");
+    assertEq(NTL::GCD(e1, ptxtSpace), NTL::ZZ(1), "e1 and ptxtSpace not co-prime");
+    assertEq(NTL::GCD(e2, ptxtSpace), NTL::ZZ(1), "e2 and ptxtSpace not co-prime");
   }
 
   if (e2 != 1) {
@@ -1565,10 +1577,11 @@ void Ctxt::tensorProduct(const Ctxt& c1, const Ctxt& c2)
   clear();                // clear *this, before we start adding things to it
   primeSet = c1.primeSet; // set the correct prime-set before we begin
 
-  long ptxtSp = c1.getPtxtSpace();
+  NTL::ZZ ptxtSp = c1.getPtxtSpace();
 
   if (ptxtSp > 2) { // BGV, handle the integer factor
-    long q = rem(context.productOfPrimes(c1.getPrimeSet()), ptxtSp);
+    NTL::ZZ q;
+    rem(q, context.productOfPrimes(c1.getPrimeSet()), ptxtSp);
     intFactor = NTL::MulMod(c1.intFactor, c2.intFactor, ptxtSp);
     intFactor = NTL::MulMod(intFactor, q, ptxtSp);
   }
@@ -1695,8 +1708,8 @@ void Ctxt::multLowLvl(const Ctxt& other_orig, bool destructive)
   assertEq(&context, &other_orig.context, "Context mismatch");
   assertEq(&pubKey, &other_orig.pubKey, "Public key mismatch");
   if (isCKKS()) {
-    assertEq(getPtxtSpace(), 1l, "Plaintext spaces incompatible");
-    assertEq(other_orig.getPtxtSpace(), 1l, "Plaintext spaces incompatible");
+    assertEq(getPtxtSpace(), NTL::ZZ(1), "Plaintext spaces incompatible");
+    assertEq(other_orig.getPtxtSpace(), NTL::ZZ(1), "Plaintext spaces incompatible");
   }
 
   Ctxt* other_pt = nullptr;
@@ -1716,8 +1729,8 @@ void Ctxt::multLowLvl(const Ctxt& other_orig, bool destructive)
 
     // equalize plaintext spaces
     if (!isCKKS()) {
-      long g = NTL::GCD(ptxtSpace, other_pt->ptxtSpace);
-      assertTrue(g > 1, "Plaintext spaces are co-prime");
+      NTL::ZZ g = NTL::GCD(ptxtSpace, other_pt->ptxtSpace);
+      assertTrue(bool(g > 1), "Plaintext spaces are co-prime");
 
       reducePtxtSpace(g);
       other_pt->reducePtxtSpace(g);
@@ -1988,7 +2001,8 @@ void Ctxt::multByConstant(const FatEncodedPtxt_BGV& ptxt)
   double size = ptxt.getSize();
 
   if (ptxtSpace != ptxt.getPtxtSpace()) {
-    reducePtxtSpace(ptxt.getPtxtSpace());
+    NTL::ZZ ptxtSpace = ptxt.getPtxtSpace();
+    reducePtxtSpace(ptxtSpace);
   }
 
   // multiply all the parts by this constant
@@ -2039,7 +2053,8 @@ void Ctxt::multByConstant(const NTL::ZZ& c)
     if (this->isEmpty())
       return;
 
-    long c0 = rem(c, ptxtSpace);
+    NTL::ZZ c0;
+    rem(c0, c, ptxtSpace);
 
     if (c0 == 1)
       return;
@@ -2048,9 +2063,9 @@ void Ctxt::multByConstant(const NTL::ZZ& c)
       return;
     }
 
-    long d = NTL::GCD(c0, ptxtSpace);
-    long c1 = c0 / d;
-    long c1_inv = NTL::InvMod(c1, ptxtSpace);
+    NTL::ZZ d = NTL::GCD(c0, ptxtSpace);
+    NTL::ZZ c1 = c0 / d;
+    NTL::ZZ c1_inv = NTL::InvMod(c1, ptxtSpace);
     // write c0 = c1 * d, mul ctxt by d, and intFactor by c1_inv
 
     intFactor = NTL::MulMod(intFactor, c1_inv, ptxtSpace);
@@ -2058,8 +2073,8 @@ void Ctxt::multByConstant(const NTL::ZZ& c)
     if (d == 1)
       return;
 
-    long cc = balRem(d, ptxtSpace);
-    noiseBound *= std::abs(cc);
+    NTL::ZZ cc = balRem_ZZ(d, ptxtSpace);
+    noiseBound *= NTL::to_xdouble(NTL::abs(cc));
 
     // multiply all the parts by this constant
     NTL::ZZ c_copy(cc);
@@ -2156,18 +2171,19 @@ void Ctxt::addConstant(const FatEncodedPtxt_BGV& ptxt, bool neg)
   double size = ptxt.getSize();
 
   if (ptxtSpace != ptxt.getPtxtSpace()) {
-    reducePtxtSpace(ptxt.getPtxtSpace());
+    NTL::ZZ ptxtSpace = ptxt.getPtxtSpace();
+    reducePtxtSpace(ptxtSpace);
   }
 
   // Scale the constant, then add it to the part that points to one
-  long f = 1;
+  NTL::ZZ f = NTL::ZZ(1);
   if (ptxtSpace > 2) {
-    f = rem(context.productOfPrimes(primeSet), ptxtSpace);
+    rem(f, context.productOfPrimes(primeSet), ptxtSpace);
     f = NTL::MulMod(intFactor, f, ptxtSpace);
-    f = balRem(f, ptxtSpace);
+    f = balRem_ZZ(f, ptxtSpace);
   }
 
-  noiseBound += size * std::abs(f);
+  noiseBound += size * NTL::to_xdouble(NTL::abs(f));
 
   // VJS-NOTE: addPart will raise an exception
   // if the prime set of dcrt does not contain
@@ -2198,12 +2214,13 @@ void Ctxt::addConstant(const EncodedPtxt_BGV& ptxt, bool neg)
   // so the noise does not increase
 
   if (ptxtSpace != ptxt.getPtxtSpace()) {
-    reducePtxtSpace(ptxt.getPtxtSpace());
+    NTL::ZZ ptxtSpace = ptxt.getPtxtSpace();
+    reducePtxtSpace(ptxtSpace);
   }
 
-  long f = 1;
+  NTL::ZZ f = NTL::ZZ(1);
   if (ptxtSpace > 2) {
-    f = rem(context.productOfPrimes(primeSet), ptxtSpace);
+    rem(f, context.productOfPrimes(primeSet), ptxtSpace);
     f = NTL::MulMod(intFactor, f, ptxtSpace);
   }
 
@@ -2266,7 +2283,8 @@ void Ctxt::addConstant(const NTL::ZZ& c, bool neg)
   if (isCKKS()) {
     addConstant(NTL::to_xdouble(c), neg);
   } else {
-    long cc = rem(c, ptxtSpace); // reduce modulo plaintext space
+    NTL::ZZ cc;
+    rem(cc, c, ptxtSpace); // reduce modulo plaintext space
     if (cc > ptxtSpace / 2)
       cc -= ptxtSpace;
 
@@ -2393,7 +2411,7 @@ void Ctxt::divideBy2()
   if (this->isEmpty())
     return;
   assertEq(ptxtSpace % 2, 0l, "Plaintext space is not even");
-  assertTrue(ptxtSpace > 2, "Plaintext space must be greater than 2");
+  assertTrue(bool(ptxtSpace > 2), "Plaintext space must be greater than 2");
 
   // multiply all the parts by (productOfPrimes+1)/2
   NTL::ZZ twoInverse; // set to (Q+1)/2
@@ -2418,9 +2436,9 @@ void Ctxt::divideByP()
   if (this->isEmpty())
     return;
 
-  long p = getContext().getP();
-  assertEq(ptxtSpace % p, 0l, "p must divide ptxtSpace");
-  assertTrue(ptxtSpace > p, "ptxtSpace must be strictly greater than p");
+  NTL::ZZ p = getContext().getP();
+  assertEq(ptxtSpace % p, NTL::ZZ(0), "p must divide ptxtSpace");
+  assertTrue(bool(ptxtSpace > p), "ptxtSpace must be strictly greater than p");
 
   // multiply all the parts by p^{-1} mod Q (Q=productOfPrimes)
   NTL::ZZ pInverse, Q;
@@ -2429,7 +2447,7 @@ void Ctxt::divideByP()
   for (long i : range(parts.size()))
     parts[i] *= pInverse;
 
-  noiseBound /= p;        // noise is reduced by a p factor
+  noiseBound /= NTL::to_xdouble(p);        // noise is reduced by a p factor
   ptxtSpace /= p;         // and so is the plaintext space
   intFactor %= ptxtSpace; // adjust intFactor
 }
@@ -2535,7 +2553,7 @@ void Ctxt::frobeniusAutomorph(long j)
       complexConj(); // If j is even do nothing
   } else {           // For BGV compute frobenius
     long m = context.getM();
-    long p = context.getP();
+    NTL::ZZ p = context.getP();
     long d = context.getOrdP();
 
     j = mcMod(j, d);
@@ -2575,7 +2593,7 @@ NTL::xdouble Ctxt::modSwitchAddedNoiseBound() const
   }
 
   double roundingNoise =
-      context.noiseBoundForUniform(double(ptxtSpace) / 2.0,
+      context.noiseBoundForUniform(NTL::to_double(ptxtSpace) / 2.0,
                                    context.getZMStar().getPhiM());
 
   return addedNoise * roundingNoise;
@@ -2593,8 +2611,8 @@ void Ctxt::writeTo(std::ostream& str) const
     4.  std::vector<CtxtPart> parts;
   */
 
-  write_raw_int(str, ptxtSpace);
-  write_raw_int(str, intFactor);
+  write_raw_ZZ(str, ptxtSpace);
+  write_raw_ZZ(str, intFactor);
   write_raw_xdouble(str, ptxtMag);
   write_raw_xdouble(str, ratFactor);
   write_raw_xdouble(str, noiseBound);
@@ -2690,8 +2708,10 @@ void Ctxt::readJSON(const JsonWrapper& jw)
 {
   auto body = [&]() {
     json j = fromTypedJson<Ctxt>(unwrap(jw));
-    this->ptxtSpace = j.at("ptxtSpace");
-    this->intFactor = j.at("intFactor");
+    NTL::ZZ tmp = j.at("ptxtSpace");
+    NTL::ZZ tmp2 = j.at("intFactor");
+    this->ptxtSpace = tmp;
+    this->intFactor = tmp2;
     this->ptxtMag = j.at("ptxtMag").get<NTL::xdouble>();
     this->ratFactor = j.at("ratFactor").get<NTL::xdouble>();
     this->noiseBound = j.at("noiseBound").get<NTL::xdouble>();
@@ -2949,7 +2969,8 @@ void innerProduct(Ctxt& result,
 double Ctxt::rawModSwitch(std::vector<NTL::ZZX>& zzParts, long q) const
 {
   // Ensure that new modulus is co-prime with plaintext space
-  const long p2r = getPtxtSpace();
+  long p2r = NTL::to_long(getPtxtSpace());
+  assertEq(NTL::to_ZZ(p2r), getPtxtSpace(), "Plaintext space is too big for mod switching");
   assertTrue<InvalidArgument>(q > 1, "q must be greater than 1");
   assertTrue(p2r > 1,
              "Plaintext space must be greater than 1 for mod switching");

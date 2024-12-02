@@ -94,7 +94,7 @@ public:
 
   SKHandle fromKey; // A handle for the key s'
   long toKeyID;     // Index of the key s that we are switching into
-  long ptxtSpace;   // either p or p^r
+  NTL::ZZ ptxtSpace;   // either p or p^r
 
   std::vector<DoubleCRT> b; // The top row, consisting of the bi's
   NTL::ZZ prgSeed; // a seed to generate the random ai's in the bottom row
@@ -105,11 +105,11 @@ public:
                      long xPow = 0,
                      long fromID = 0,
                      long toID = 0,
-                     long p = 0);
+                     NTL::ZZ p = NTL::ZZ(0));
   explicit KeySwitch(const SKHandle& _fromKey,
                      long fromID = 0,
                      long toID = 0,
-                     long p = 0);
+                     NTL::ZZ p = NTL::ZZ(0));
 
   bool operator==(const KeySwitch& other) const;
   bool operator!=(const KeySwitch& other) const;

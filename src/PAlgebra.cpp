@@ -441,11 +441,12 @@ PAlgebraModDerived<PA_cx>::PAlgebraModDerived(const PAlgebra& palg, long _r) :
 }
 
 PAlgebra::PAlgebra(long mm,
-                   long pp,
+                   NTL::ZZ pp,
                    const std::vector<long>& _gens,
                    const std::vector<long>& _ords) :
     m(mm), p(pp), cM(1.0) // default value for the ring constant
 {
+  NTL::ZZ mm_ = NTL::to_ZZ(mm);
   assertInRange<InvalidArgument>(mm,
                                  2l,
                                  NTL_SP_BOUND,
@@ -455,7 +456,7 @@ PAlgebra::PAlgebra(long mm,
   else {
     assertTrue<InvalidArgument>((bool)NTL::ProbPrime(pp),
                                 "Modulus pp is not prime (nor -1)");
-    assertNeq<InvalidArgument>(mm % pp, 0l, "Modulus pp divides mm");
+    assertNeq<InvalidArgument>(mm_ % pp, NTL::ZZ(0), "Modulus pp divides mm");
   }
 
   long k = NTL::NextPowerOfTwo(mm);
@@ -477,7 +478,7 @@ PAlgebra::PAlgebra(long mm,
     // externally supplied generator,orders
     tmpOrds = _ords;
     this->gens = _gens;
-    this->ordP = multOrd(pp, mm);
+    this->ordP = multOrd(pp, mm_);
   } else
     // treat externally supplied generators (if any) as candidates
     this->ordP = findGenerators(this->gens, tmpOrds, mm, pp, _gens);
@@ -594,7 +595,7 @@ bool comparePAlgebra(const PAlgebra& palg,
                      const std::vector<long>& ords)
 {
   if (static_cast<unsigned long>(palg.getM()) != m ||
-      static_cast<unsigned long>(palg.getP()) != p ||
+      palg.getP() != p ||
       static_cast<std::size_t>(palg.numOfGens()) != gens.size() ||
       static_cast<std::size_t>(palg.numOfGens()) != ords.size())
     return false;
@@ -612,7 +613,9 @@ bool comparePAlgebra(const PAlgebra& palg,
 
 long PAlgebra::frobeniusPow(long j) const
 {
-  return NTL::PowerMod(mcMod(p, m), j, m);
+  auto m_ = NTL::ZZ(m);
+  auto p_ = p;
+  return NTL::to_long(NTL::PowerMod(mcMod_ZZ(p_, m_), j, m_));
   // Don't forget to reduce p mod m!!
 }
 
@@ -644,12 +647,12 @@ long PAlgebra::genToPow(long i, long j) const
 
 PAlgebraModBase* buildPAlgebraMod(const PAlgebra& zMStar, long r)
 {
-  long p = zMStar.getP();
+  NTL::ZZ p = zMStar.getP();
 
   if (p == -1) // complex plaintext space
     return new PAlgebraModCx(zMStar, r);
 
-  assertTrue<InvalidArgument>(p >= 2,
+  assertTrue<InvalidArgument>(bool(p >= 2),
                               "Modulus p is less than 2 (nor -1 for CKKS)");
   assertTrue<InvalidArgument>(r > 0, "Hensel lifting r is less than 1");
   if (p == 2 && r == 1)
@@ -682,7 +685,7 @@ PAlgebraModDerived<type>::PAlgebraModDerived(const PAlgebra& _zMStar, long _r) :
     zMStar(_zMStar), r(_r)
 
 {
-  long p = zMStar.getP();
+  NTL::ZZ p = zMStar.getP();
   long m = zMStar.getM();
 
   // For dry-run, use a tiny m value for the PAlgebra tables
@@ -691,7 +694,7 @@ PAlgebraModDerived<type>::PAlgebraModDerived(const PAlgebra& _zMStar, long _r) :
 
   assertTrue<InvalidArgument>(r > 0l, "Hensel lifting r is less than 1");
 
-  NTL::ZZ BigPPowR = NTL::power_ZZ(p, r);
+  NTL::ZZ BigPPowR = NTL::power(p, r);
   assertTrue((bool)BigPPowR.SinglePrecision(),
              "BigPPowR is not SinglePrecision");
   pPowR = to_long(BigPPowR);
@@ -1288,7 +1291,7 @@ void PAlgebraModDerived<type>::buildLinPolyCoeffs(
   mappingData.contextForG.restore();
 
   long d = RE::degree();
-  long p = zMStar.getP();
+  NTL::ZZ p = zMStar.getP();
 
   assertEq(lsize(L), d, "Vector L size is different than RE::degree()");
 

@@ -49,7 +49,7 @@ EvalMap::EvalMap(const EncryptedArray& _ea,
 {
   const PAlgebra& zMStar = ea.getPAlgebra();
 
-  long p = zMStar.getP();
+  NTL::ZZ p = zMStar.getP();
   long d = zMStar.getOrdP();
 
   // FIXME: we should check that ea was initialized with
@@ -263,7 +263,7 @@ public:
       mat_RE A1, A2;
       conv(A1, A);
 
-      long p = _ea.getAlMod().getZMStar().getP();
+      NTL::ZZ p = _ea.getAlMod().getZMStar().getP();
       long r = _ea.getAlMod().getR();
 
       ppInvert(A2, A1, p, r);
@@ -367,7 +367,7 @@ public:
         for (long j = 0; j < sz * d; j++)
           A1[i][j] = A[i / d][j / d][i % d][j % d];
 
-      long p = _ea.getAlMod().getZMStar().getP();
+      NTL::ZZ p = _ea.getAlMod().getZMStar().getP();
       long r = _ea.getAlMod().getR();
 
       ppInvert(A2, A1, p, r);
@@ -515,7 +515,7 @@ ThinEvalMap::ThinEvalMap(const EncryptedArray& _ea,
 {
   const PAlgebra& zMStar = ea.getPAlgebra();
 
-  long p = zMStar.getP();
+  NTL::ZZ p = zMStar.getP();
   long d = zMStar.getOrdP();
   long sz = zMStar.numOfGens();
 
@@ -719,7 +719,7 @@ public:
       mat_RE A1, A2;
       conv(A1, A);
 
-      long p = _ea.getAlMod().getZMStar().getP();
+      NTL::ZZ p = _ea.getAlMod().getZMStar().getP();
       long r = _ea.getAlMod().getR();
 
       ppInvert(A2, A1, p, r);
@@ -796,7 +796,7 @@ public:
     const RXModulus G(ea.getG());
     long d = deg(G);
 
-    long p = _ea.getAlMod().getZMStar().getP();
+    NTL::ZZ p = _ea.getAlMod().getZMStar().getP();
     long r = _ea.getAlMod().getR();
 
     long sz = sig->getDim(dim);

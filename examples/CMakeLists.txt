@@ -38,7 +38,8 @@ file(STRINGS "../VERSION" HELIB_VERSION)
 
 find_package(helib "${HELIB_VERSION}" EXACT REQUIRED)
 
-add_subdirectory(BGV_binary_arithmetic)
-add_subdirectory(BGV_country_db_lookup)
-add_subdirectory(BGV_packed_arithmetic)
-add_subdirectory(tutorial)
+add_subdirectory(BGV_bigint)
+# add_subdirectory(BGV_binary_arithmetic)
+# add_subdirectory(BGV_country_db_lookup)
+# add_subdirectory(BGV_packed_arithmetic)
+# add_subdirectory(tutorial)

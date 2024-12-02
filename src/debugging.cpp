@@ -99,7 +99,7 @@ void decryptAndPrint(std::ostream& s,
     ea.decode(ptxt, p);
     if (ea.getAlMod().getTag() == PA_zz_p_tag &&
         ctxt.getPtxtSpace() != ea.getAlMod().getPPowR()) {
-      long g = NTL::GCD(ctxt.getPtxtSpace(), ea.getAlMod().getPPowR());
+      NTL::ZZ g = NTL::GCD(ctxt.getPtxtSpace(), ea.getAlMod().getPPowR());
       for (long i = 0; i < ea.size(); i++)
         PolyRed(ptxt[i], g, true);
     }

@@ -100,7 +100,7 @@ PolyMod::operator NTL::ZZX() const
 
 bool PolyMod::isValid() const { return ringDescriptor != nullptr; }
 
-long PolyMod::getp2r() const { return ringDescriptor->p2r; }
+NTL::ZZ PolyMod::getp2r() const { return ringDescriptor->p2r; }
 
 NTL::ZZX PolyMod::getG() const { return ringDescriptor->G; }
 

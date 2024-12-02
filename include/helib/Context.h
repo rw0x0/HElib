@@ -80,7 +80,7 @@ double lweEstimateSecurity(int n, double log2AlphaInv, int hwt);
 long FindM(long k,
            long nBits,
            long c,
-           long p,
+           NTL::ZZ p,
            long d,
            long s,
            long chosen_m,
@@ -198,14 +198,14 @@ private:
   // gens The generators of `(Z/mZ)^*` (other than `p`).
   // ords The orders of each of the generators of `(Z/mZ)^*`.
   Context(unsigned long m,
-          unsigned long p,
+          const NTL::ZZ& p,
           unsigned long r,
           const std::vector<long>& gens = std::vector<long>(),
           const std::vector<long>& ords = std::vector<long>());
 
   // Used by ContextBuilder
   Context(long m,
-          long p,
+          const NTL::ZZ& p,
           long r,
           const std::vector<long>& gens,
           const std::vector<long>& ords,
@@ -256,7 +256,7 @@ public:
    * @brief Getter method for the `p` used to create this `context`.
    * @return The plaintext modulus `p`.
    **/
-  long getP() const { return zMStar.getP(); }
+  NTL::ZZ getP() const { return zMStar.getP(); }
 
   /**
    * @brief Getter method for the `phi(m)` of the created `context`.
@@ -304,7 +304,7 @@ public:
    * @note This value is not invariant: it is possible to work "view" objects
    * that use different `PAlgebra` objects.
    **/
-  long getPPowR() const { return alMod.getPPowR(); }
+  NTL::ZZ getPPowR() const { return alMod.getPPowR(); }
 
   // synonymn for getR().
   // this is used in various corner cases in CKKS where
@@ -517,6 +517,19 @@ public:
   double noiseBoundForMod(long modulus, long degBound) const
   {
     double var = fsquare(modulus) / 12.0;
+    if (modulus % 2 == 0)
+      var += 1.0 / 6.0;
+
+    return scale * std::sqrt(degBound * var);
+  }
+
+    /**
+   *
+   **/
+  double noiseBoundForMod(NTL::ZZ modulus, long degBound) const
+  {
+    auto modulus_d = NTL::to_double(modulus);
+    double var = fsquare(modulus_d) / 12.0;
     if (modulus % 2 == 0)
       var += 1.0 / 6.0;
 
@@ -1065,7 +1078,7 @@ private:
   std::vector<long> gens_;
   std::vector<long> ords_;
   long m_ = default_values::m; // BGV: 3, CKKS: 4
-  long p_ = default_values::p; // BGV: 2, CKKS: -1
+  NTL::ZZ p_ = default_values::p; // BGV: 2, CKKS: -1
   long r_ = default_values::r; // BGV: Hensel lifting = 1,
                                // CKKS: Precision = 20
   long c_ = 3;
@@ -1112,7 +1125,7 @@ public:
    **/
   template <typename S = SCHEME,
             std::enable_if_t<std::is_same<S, BGV>::value>* = nullptr>
-  ContextBuilder& p(long p)
+  ContextBuilder& p(NTL::ZZ p)
   {
     p_ = p;
     return *this;

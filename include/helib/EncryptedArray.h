@@ -129,7 +129,7 @@ public:
   virtual const Context& getContext() const = 0;
   virtual const PAlgebra& getPAlgebra() const = 0;
   virtual long getDegree() const = 0;
-  virtual long getP2R() const = 0;
+  virtual NTL::ZZ getP2R() const = 0;
 
   //! @brief Right rotation as a linear array.
   //! E.g., rotating ctxt=Enc(1 2 3 ... n) by k=1 gives Enc(n 1 2 ... n-1)
@@ -496,7 +496,7 @@ public:
                         long k,
                         bool dc = false) const override;
 
-  long getP2R() const override { return getTab().getPPowR(); }
+  NTL::ZZ getP2R() const override { return getTab().getPPowR(); }
 
   // avoid this being "hidden" by other rotate1D's
   template <typename U>
@@ -640,7 +640,8 @@ public:
   {
     zzX poly;
     encode(poly, array);
-    eptxt.resetBGV(poly, getP2R(), getContext());
+    auto p2r = getP2R();
+    eptxt.resetBGV(poly, p2r, getContext());
   }
 
   virtual void encode(EncodedPtxt& eptxt,
@@ -648,7 +649,8 @@ public:
   {
     zzX poly;
     encode(poly, array);
-    eptxt.resetBGV(poly, getP2R(), getContext());
+    auto p2r = getP2R();
+    eptxt.resetBGV(poly, p2r, getContext());
   }
 
   virtual void encode(UNUSED EncodedPtxt& eptxt,
@@ -676,7 +678,8 @@ public:
                "BGV encoding: mag,prec set must be defaulted");
     zzX poly;
     encode(poly, array);
-    eptxt.resetBGV(poly, getP2R(), getContext());
+    auto p2r = getP2R();
+    eptxt.resetBGV(poly, p2r, getContext());
   }
 
   virtual void encode(EncodedPtxt& eptxt,
@@ -691,7 +694,8 @@ public:
   {
     zzX poly;
     encodeUnitSelector(poly, i);
-    eptxt.resetBGV(poly, getP2R(), getContext());
+    auto p2r = getP2R();
+    eptxt.resetBGV(poly, p2r, getContext());
   }
 
   //===========================================
@@ -728,11 +732,13 @@ public:
                        const SecKey& sKey,
                        std::vector<long>& ptxt) const override
   {
+    auto p_ = ctxt.getPtxtSpace();
+    long p = NTL::to_long(p_);
     genericDecrypt(ctxt, sKey, ptxt);
     if (ctxt.getPtxtSpace() < getP2R()) {
       helib::Warning("EncryptedArray::decrypt: reducing plaintext modulus");
       for (long i = 0; i < (long)ptxt.size(); i++)
-        ptxt[i] %= ctxt.getPtxtSpace();
+        ptxt[i] %= p;
     }
   }
 
@@ -922,7 +928,7 @@ public:
   void rotate1D(Ctxt& ctxt, long i, long k, bool dc = false) const override;
   void shift1D(Ctxt& ctxt, long i, long k) const override;
 
-  long getP2R() const override { return alMod.getPPowR(); }
+  NTL::ZZ getP2R() const override { return alMod.getPPowR(); }
 
   // the following help with some template code
   cx_double getG() const { return 0.0; }

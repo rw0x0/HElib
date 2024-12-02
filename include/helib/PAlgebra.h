@@ -76,7 +76,7 @@ struct quarter_FFT
 class PAlgebra
 {
   long m; // the integer m defines (Z/mZ)^*, Phi_m(X), etc.
-  long p; // the prime base of the plaintext space
+  NTL::ZZ p; // the prime base of the plaintext space
 
   long phiM;      // phi(m)
   long ordP;      // the order of p in (Z/mZ)^*
@@ -144,7 +144,7 @@ public:
   PAlgebra& operator=(const PAlgebra&) = delete;
 
   PAlgebra(long mm,
-           long pp = 2,
+           NTL::ZZ pp = NTL::ZZ(2),
            const std::vector<long>& _gens = std::vector<long>(),
            const std::vector<long>& _ords = std::vector<long>()); // constructor
 
@@ -164,7 +164,7 @@ public:
   long getM() const { return m; }
 
   //! Returns p
-  long getP() const { return p; }
+  NTL::ZZ getP() const { return p; }
 
   //! Returns phi(m)
   long getPhiM() const { return phiM; }
@@ -348,6 +348,7 @@ public:
   void restore() const {}
   DummyContext() {}
   DummyContext(long) {}
+  DummyContext(NTL::ZZ&) {}
 };
 
 class DummyModulus
@@ -469,7 +470,7 @@ public:
   virtual long getR() const = 0;
 
   //! The value p^r
-  virtual long getPPowR() const = 0;
+  virtual NTL::ZZ getPPowR() const = 0;
 
   //! Restores the NTL context for p^r
   virtual void restoreContext() const = 0;
@@ -572,7 +573,7 @@ public:
 private:
   const PAlgebra& zMStar;
   long r;
-  long pPowR;
+  NTL::ZZ pPowR;
   RContext pPowRContext;
 
   RXModulus PhimXMod;
@@ -631,7 +632,7 @@ public:
   virtual long getR() const override { return r; }
 
   //! The value p^r
-  virtual long getPPowR() const override { return pPowR; }
+  virtual NTL::ZZ getPPowR() const override { return pPowR; }
 
   //! Restores the NTL context for p^r
   virtual void restoreContext() const override { pPowRContext.restore(); }
@@ -738,9 +739,11 @@ public:
 private:
   /* internal functions, not for public consumption */
 
-  static void SetModulus(long p)
+  static void SetModulus(NTL::ZZ p)
   {
-    RContext context(p);
+    long p_ = NTL::to_long(p);
+    assertEq(NTL::ZZ(p_), p, "p too large");
+    RContext context(p_);
     context.restore();
   }
 
@@ -783,7 +786,7 @@ public:
 
   const PAlgebra& getZMStar() const override { return zMStar; }
   long getR() const override { return r; }
-  long getPPowR() const override { return 1L << r; }
+  NTL::ZZ getPPowR() const override { return NTL::ZZ(1) << r; }
   void restoreContext() const override {}
 
   // These function make no sense for PAlgebraModCx
@@ -864,7 +867,7 @@ public:
   //! The value r
   long getR() const { return rep->getR(); }
   //! The value p^r
-  long getPPowR() const { return rep->getPPowR(); }
+  NTL::ZZ getPPowR() const { return rep->getPPowR(); }
   //! Restores the NTL context for p^r
   void restoreContext() const { rep->restoreContext(); }
 

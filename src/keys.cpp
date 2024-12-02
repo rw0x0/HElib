@@ -9,7 +9,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License. See accompanying LICENSE file.
  */
- 
+
 /* Copyright (C) 2022 Intel Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
@@ -37,13 +37,13 @@ namespace helib {
 /******** Utility function to generate RLWE instances *********/
 
 // Assumes that c1 is already chosen by the caller
-double RLWE1(DoubleCRT& c0, const DoubleCRT& c1, const DoubleCRT& s, long p)
+double RLWE1(DoubleCRT& c0, const DoubleCRT& c1, const DoubleCRT& s, NTL::ZZ& p)
 // Returns a high-probability bound on the L-infty norm
 // of the canonical embedding of the decryption of (c0, c1) w/r/to s
 {
   // Used with p=1 for CKKS, p>=2 for BGV
   assertTrue<InvalidArgument>(
-      p > 0,
+      bool(p > 0),
       "Cannot generate RLWE instance with nonpositive p"); // Used with p=1 for
                                                            // CKKS, p>=2 for BGV
   const Context& context = s.getContext();
@@ -61,7 +61,7 @@ double RLWE1(DoubleCRT& c0, const DoubleCRT& c1, const DoubleCRT& s, long p)
   // the primes for of c0,c1 are unchanged.
   if (p > 1) {
     c0 *= p;
-    bound *= p;
+    bound *= NTL::to_double(p);
   }
 
   DoubleCRT tmp(c1);
@@ -76,7 +76,7 @@ double RLWE1(DoubleCRT& c0, const DoubleCRT& c1, const DoubleCRT& s, long p)
 double RLWE(DoubleCRT& c0,
             DoubleCRT& c1,
             const DoubleCRT& s,
-            long p,
+            NTL::ZZ& p,
             NTL::ZZ* prgSeed)
 {
   // choose c1 at random (using prgSeed if not nullptr)
@@ -271,7 +271,7 @@ bool PubKey::operator==(const PubKey& other) const
 bool PubKey::operator!=(const PubKey& other) const { return !(*this == other); }
 
 const Context& PubKey::getContext() const { return context; }
-long PubKey::getPtxtSpace() const { return pubEncrKey.ptxtSpace; }
+NTL::ZZ PubKey::getPtxtSpace() const { return pubEncrKey.ptxtSpace; }
 bool PubKey::keyExists(long keyID) const
 {
   return (keyID < (long)skBounds.size());
@@ -355,15 +355,15 @@ void PubKey::setKSStrategy(long dim, int val)
 //     that they are scaled by eacx.encodeScalingFactor(). The
 //     returned value is the same as the argument ptxtSpace.
 
-long PubKey::Encrypt(Ctxt& ctxt,
+NTL::ZZ PubKey::Encrypt(Ctxt& ctxt,
                      const NTL::ZZX& ptxt,
-                     long ptxtSpace,
+                     NTL::ZZ& ptxtSpace,
                      bool highNoise) const
 {
   HELIB_TIMER_START;
   // NOTE: isCKKS() checks the tag in the alMod  the context
   if (isCKKS()) {
-    double pSize = (ptxtSpace <= 0) ? 1.0 : double(ptxtSpace);
+    double pSize = (ptxtSpace <= 0) ? 1.0 : NTL::to_double(ptxtSpace);
     // For CKKSencrypt, ptxtSpace==1 is the defaults size value
     CKKSencrypt(ctxt, ptxt, pSize); // FIXME: handle highNoise in CKKSencrypt
     return ptxtSpace;
@@ -431,7 +431,7 @@ long PubKey::Encrypt(Ctxt& ctxt,
     }
 
     e *= ptxtSpace;
-    e_bound *= ptxtSpace;
+    e_bound *= NTL::to_xdouble(ptxtSpace);
 
     if (i == 1) {
       e_bound *= getSKeyBound(ctxt.parts[i].skHandle.getSecretKeyID());
@@ -449,7 +449,8 @@ long PubKey::Encrypt(Ctxt& ctxt,
   // NOTE: This relies on the first part, ctxt[0], to have handle to 1
 
   // This code sequence could be optimized, but there is no point
-  long QmodP = rem(context.productOfPrimes(ctxt.primeSet), ptxtSpace);
+  NTL::ZZ QmodP;
+  rem(QmodP, context.productOfPrimes(ctxt.primeSet), ptxtSpace);
   NTL::ZZX ptxt_fixed;
   balanced_MulMod(ptxt_fixed, ptxt, QmodP, ptxtSpace);
   ctxt.parts[0] += ptxt_fixed;
@@ -487,9 +488,9 @@ long PubKey::Encrypt(Ctxt& ctxt,
   return ptxtSpace;
 }
 
-long PubKey::Encrypt(Ctxt& ciphertxt,
+NTL::ZZ PubKey::Encrypt(Ctxt& ciphertxt,
                      const zzX& plaintxt,
-                     long ptxtSpace,
+                     NTL::ZZ& ptxtSpace,
                      bool highNoise) const
 {
   NTL::ZZX tmp;
@@ -514,7 +515,7 @@ void PubKey::CKKSencrypt(Ctxt& ctxt,
     scaling = getContext().getEA().getCx().encodeScalingFactor() / ptxtSize;
 
   long m = context.getM();
-  long prec = getContext().getAlMod().getPPowR();
+  NTL::ZZ prec = getContext().getAlMod().getPPowR();
 
   // generate a random encryption of zero from the public encryption key
   ctxt = pubEncrKey; // already an encryption of zero, just not a random one
@@ -565,7 +566,7 @@ void PubKey::CKKSencrypt(Ctxt& ctxt,
   }
 
   // Compute the extra scaling factor, if needed
-  long ef = NTL::conv<long>(ceil(error_bound * prec / (scaling * ptxtSize)));
+  long ef = NTL::conv<long>(ceil(error_bound * NTL::to_xdouble(prec) / (scaling * ptxtSize)));
   if (ef > 1) { // scale up some more
     ctxt.parts[0] += ptxt * ef;
     scaling *= ef;
@@ -591,14 +592,14 @@ void PubKey::CKKSencrypt(Ctxt& ciphertxt,
 }
 
 // These methods are overridden by secret-key Encrypt
-long PubKey::Encrypt(Ctxt& ciphertxt,
+NTL::ZZ PubKey::Encrypt(Ctxt& ciphertxt,
                      const NTL::ZZX& plaintxt,
-                     long ptxtSpace) const
+                     NTL::ZZ ptxtSpace) const
 {
   return Encrypt(ciphertxt, plaintxt, ptxtSpace, /*highNoise=*/false);
 }
 
-long PubKey::Encrypt(Ctxt& ciphertxt, const zzX& plaintxt, long ptxtSpace) const
+NTL::ZZ PubKey::Encrypt(Ctxt& ciphertxt, const zzX& plaintxt, NTL::ZZ ptxtSpace) const
 {
   return Encrypt(ciphertxt, plaintxt, ptxtSpace, /*highNoise=*/false);
 }
@@ -638,7 +639,7 @@ void PubKey::Encrypt(Ctxt& ctxt, const EncodedPtxt_BGV& eptxt) const
   assertEq(this, &ctxt.pubKey, "Encrypt: public key mismatch");
   assertEq(&context, &eptxt.getContext(), "Encrypt: context mismatch");
 
-  long ptxtSpace = eptxt.getPtxtSpace();
+  NTL::ZZ ptxtSpace = eptxt.getPtxtSpace();
   NTL::ZZX ptxt;
 
   convert(ptxt, eptxt.getPoly());
@@ -705,7 +706,7 @@ void PubKey::Encrypt(Ctxt& ctxt, const EncodedPtxt_BGV& eptxt) const
     e_bound = e.sampleGaussianBounded(stdev);
 
     e *= ptxtSpace;
-    e_bound *= ptxtSpace;
+    e_bound *= NTL::to_xdouble(ptxtSpace);
 
     if (i == 1) {
       e_bound *= getSKeyBound(ctxt.parts[i].skHandle.getSecretKeyID());
@@ -723,7 +724,8 @@ void PubKey::Encrypt(Ctxt& ctxt, const EncodedPtxt_BGV& eptxt) const
   // NOTE: This relies on the first part, ctxt[0], to have handle to 1
 
   // This code sequence could be optimized, but there is no point
-  long QmodP = rem(context.productOfPrimes(ctxt.primeSet), ptxtSpace);
+  NTL::ZZ QmodP;
+  rem(QmodP, context.productOfPrimes(ctxt.primeSet), ptxtSpace);
   NTL::ZZX ptxt_fixed;
   balanced_MulMod(ptxt_fixed, ptxt, QmodP, ptxtSpace);
   ctxt.parts[0] += ptxt_fixed;
@@ -1098,12 +1100,12 @@ void SecKey::clear()
 // It is assumed that the context already contains all parameters.
 long SecKey::ImportSecKey(const DoubleCRT& sKey,
                           double bound,
-                          long ptxtSpace,
+                          NTL::ZZ ptxtSpace,
                           long maxDegKswitch)
 {
   if (sKeys.empty()) { // 1st secret-key, generate corresponding public key
     if (ptxtSpace < 2)
-      ptxtSpace = isCKKS() ? 1 : context.getAlMod().getPPowR();
+      ptxtSpace = isCKKS() ? NTL::ZZ(1) : context.getAlMod().getPPowR();
     // default plaintext space is p^r for BGV, 1 for CKKS
 
     // allocate space, the parts are DoubleCRTs with all the ctxtPrimes
@@ -1136,7 +1138,7 @@ long SecKey::ImportSecKey(const DoubleCRT& sKey,
   return keyID; // return the index where this key is stored
 }
 
-long SecKey::GenSecKey(long ptxtSpace, long maxDegKswitch)
+long SecKey::GenSecKey(NTL::ZZ ptxtSpace, long maxDegKswitch)
 {
   long hwt = context.getHwt();
 
@@ -1160,7 +1162,7 @@ void SecKey::GenKeySWmatrix(long fromSPower,
                             long fromXPower,
                             long fromIdx,
                             long toIdx,
-                            long p)
+                            NTL::ZZ p)
 {
   HELIB_TIMER_START;
 
@@ -1224,7 +1226,7 @@ void SecKey::GenKeySWmatrix(long fromSPower,
     //   plaintext space even if *this is not currently bootstrappable,
     //   in case the calling application will make it bootstrappable later.
 
-    assertTrue(p >= 2,
+    assertTrue(bool(p >= 2),
                "Invalid p value found generating BGV key-switching matrix");
   }
   ksMatrix.ptxtSpace = p;
@@ -1409,21 +1411,23 @@ void SecKey::Decrypt(NTL::ZZX& plaintxt,
 
   // if p>2, multiply by (intFactor * Q)^{-1} mod p
   if (ciphertxt.getPtxtSpace() > 2) {
-    long factor = rem(context.productOfPrimes(ciphertxt.getPrimeSet()),
+    NTL::ZZ factor;
+    rem(factor, context.productOfPrimes(ciphertxt.getPrimeSet()),
                       ciphertxt.ptxtSpace);
     factor = NTL::MulMod(factor, ciphertxt.intFactor, ciphertxt.ptxtSpace);
     if (factor != 1) {
       factor = NTL::InvMod(factor, ciphertxt.ptxtSpace);
-      MulMod(plaintxt, plaintxt, factor, ciphertxt.ptxtSpace, /*abs=*/true);
+      auto ptxtSpace = ciphertxt.ptxtSpace;
+      MulMod(plaintxt, plaintxt, factor, ptxtSpace, /*abs=*/true);
     }
   }
 }
 
 // Encryption using the secret key, this is useful, e.g., to put an
 // encryption of the secret key into the public key.
-long SecKey::skEncrypt(Ctxt& ctxt,
+NTL::ZZ SecKey::skEncrypt(Ctxt& ctxt,
                        const NTL::ZZX& ptxt,
-                       long ptxtSpace,
+                       NTL::ZZ& ptxtSpace,
                        long skIdx) const
 {
   // VJS-FIXME: this routine has a number of issues and should
@@ -1438,12 +1442,12 @@ long SecKey::skEncrypt(Ctxt& ctxt,
   double ptxtSize = 1.0;
   if (isCKKS()) {
     if (ptxtSpace > 0)
-      ptxtSize = ptxtSpace;
+      ptxtSize = NTL::to_double(ptxtSpace);
     ptxtSpace = 1;
   } else { // BGV
     if (ptxtSpace < 2)
       ptxtSpace = pubEncrKey.ptxtSpace; // default plaintext space is p^r
-    assertTrue(ptxtSpace >= 2, "Found invalid p value in BGV encryption");
+    assertTrue(bool(ptxtSpace >= 2), "Found invalid p value in BGV encryption");
   }
   ctxt.ptxtSpace = ptxtSpace;
 
@@ -1472,8 +1476,8 @@ long SecKey::skEncrypt(Ctxt& ctxt,
   if (isCKKS()) {
 
     double f = getContext().getEA().getCx().encodeScalingFactor() / ptxtSize;
-    long prec = getContext().getAlMod().getPPowR();
-    long ef = NTL::conv<long>(ceil(prec * ctxt.noiseBound / (f * ptxtSize)));
+    NTL::ZZ prec = getContext().getAlMod().getPPowR();
+    long ef = NTL::conv<long>(ceil(NTL::to_xdouble(prec) * ctxt.noiseBound / (f * ptxtSize)));
     if (ef > 1) { // scale up some more
       ctxt.parts[0] += ptxt * ef;
       f *= ef;
@@ -1485,7 +1489,7 @@ long SecKey::skEncrypt(Ctxt& ctxt,
     ctxt.ratFactor = f;
     ctxt.noiseBound += ptxtSize * ctxt.ratFactor;
     // VJS-NOTE: the above noise calculation makes no sense to me
-    return long(f);
+    return NTL::ZZ(f);
 
   } else { // BGV
 
@@ -1498,7 +1502,8 @@ long SecKey::skEncrypt(Ctxt& ctxt,
     // NOTE: This relies on the first part, ctxt[0], to have handle to 1
 
     // This code sequence could be optimized, but there is no point
-    long QmodP = rem(context.productOfPrimes(ctxt.primeSet), ptxtSpace);
+    NTL::ZZ QmodP;
+    rem(QmodP, context.productOfPrimes(ctxt.primeSet), ptxtSpace);
     NTL::ZZX ptxt_fixed;
     balanced_MulMod(ptxt_fixed, ptxt, QmodP, ptxtSpace);
     ctxt.parts[0] += ptxt_fixed;
@@ -1527,9 +1532,9 @@ long SecKey::skEncrypt(Ctxt& ctxt,
   }
 }
 
-long SecKey::skEncrypt(Ctxt& ctxt,
+NTL::ZZ SecKey::skEncrypt(Ctxt& ctxt,
                        const zzX& ptxt,
-                       long ptxtSpace,
+                       NTL::ZZ& ptxtSpace,
                        long skIdx) const
 {
   NTL::ZZX tmp;
@@ -1537,13 +1542,13 @@ long SecKey::skEncrypt(Ctxt& ctxt,
   return skEncrypt(ctxt, tmp, ptxtSpace, skIdx);
 }
 // These methods override the public-key Encrypt methods
-long SecKey::Encrypt(Ctxt& ciphertxt,
+NTL::ZZ SecKey::Encrypt(Ctxt& ciphertxt,
                      const NTL::ZZX& plaintxt,
-                     long ptxtSpace) const
+                     NTL::ZZ ptxtSpace) const
 {
   return skEncrypt(ciphertxt, plaintxt, ptxtSpace, /*skIdx=*/0);
 }
-long SecKey::Encrypt(Ctxt& ciphertxt, const zzX& plaintxt, long ptxtSpace) const
+NTL::ZZ SecKey::Encrypt(Ctxt& ciphertxt, const zzX& plaintxt, NTL::ZZ ptxtSpace) const
 {
   return skEncrypt(ciphertxt, plaintxt, ptxtSpace, /*skIdx=*/0);
 }
@@ -1568,7 +1573,7 @@ void SecKey::Encrypt(Ctxt& ctxt, const EncodedPtxt_BGV& eptxt) const
   assertEq((const PubKey*)this, &ctxt.pubKey, "Encrypt: public key mismatch");
   assertEq(&context, &eptxt.getContext(), "Encrypt: context mismatch");
 
-  long ptxtSpace = eptxt.getPtxtSpace();
+  NTL::ZZ ptxtSpace = eptxt.getPtxtSpace();
   NTL::ZZX ptxt;
 
   convert(ptxt, eptxt.getPoly());
@@ -1598,7 +1603,8 @@ void SecKey::Encrypt(Ctxt& ctxt, const EncodedPtxt_BGV& eptxt) const
   // NOTE: This relies on the first part, ctxt[0], to have handle to 1
 
   // This code sequence could be optimized, but there is no point
-  long QmodP = rem(context.productOfPrimes(ctxt.primeSet), ptxtSpace);
+  NTL::ZZ QmodP;
+  rem(QmodP, context.productOfPrimes(ctxt.primeSet), ptxtSpace);
   NTL::ZZX ptxt_fixed;
   balanced_MulMod(ptxt_fixed, ptxt, QmodP, ptxtSpace);
   ctxt.parts[0] += ptxt_fixed;
@@ -1648,7 +1654,8 @@ void SecKey::Encrypt(Ctxt& ctxt, const EncodedPtxt_CKKS& eptxt) const
 
   // Sample a new RLWE instance
   const DoubleCRT& sKey = sKeys.at(skIdx);
-  double error_bound = RLWE(ctxt.parts[0], ctxt.parts[1], sKey, 1);
+  auto one = NTL::ZZ(1);
+  double error_bound = RLWE(ctxt.parts[0], ctxt.parts[1], sKey, one);
 
   // This follows the same logic in PubKey::Encrypt(EncodedPtxt_CKKS).
   // See documentation there
@@ -1684,8 +1691,8 @@ long SecKey::genRecryptData()
   assertTrue(context.isBootstrappable(),
              "Cannot generate recrypt data for non-bootstrappable context");
 
-  long p2ePr = context.getRcData().alMod->getPPowR(); // p^{e-e'+r}
-  long p2r = context.getAlMod().getPPowR();           // p^r
+  NTL::ZZ p2ePr = context.getRcData().alMod->getPPowR(); // p^{e-e'+r}
+  NTL::ZZ p2r = context.getAlMod().getPPowR();           // p^r
 
   // Generate a new bootstrapping key
   zzX keyPoly;

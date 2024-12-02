@@ -1462,14 +1462,14 @@ NTL::xdouble DoubleCRT::sampleUniform(const NTL::ZZ& B)
 }
 
 void DoubleCRT::scaleDownToSet(const IndexSet& s,
-                               long ptxtSpace,
+                               NTL::ZZ& ptxtSpace,
                                NTL::ZZX& delta)
 {
   IndexSet diff = getIndexSet() / s;
   if (empty(diff))
     return; // nothing to do
 
-  assertTrue(ptxtSpace >= 1, "ptxtSpace must be at least 1");
+  assertTrue(bool(ptxtSpace >= 1), "ptxtSpace must be at least 1");
   // cannot mod-down to the empty set
   assertNeq(diff,
             getIndexSet(),
@@ -1488,12 +1488,15 @@ void DoubleCRT::scaleDownToSet(const IndexSet& s,
     //          diffProd * (delta[i] * diffProd^{-1} mod ptxtSpace).
     // This does not change delta modulo diffProd, but makes it
     // divisible by ptxtSpace.
-    long p_over_2 = ptxtSpace / 2;
+    NTL::ZZ p_over_2 = ptxtSpace / 2;
     long p_mod_2 = ptxtSpace % 2;
-    long prodInv = NTL::InvMod(rem(diffProd, ptxtSpace), ptxtSpace);
+    NTL::ZZ tmp;
+    rem(tmp, diffProd, ptxtSpace);
+    NTL::ZZ prodInv = NTL::InvMod(tmp, ptxtSpace);
 
     for (long i : range(delta.rep.length())) {
-      long delta_i_modP = rem(delta.rep[i], ptxtSpace);
+      NTL::ZZ delta_i_modP;
+      rem(delta_i_modP, delta.rep[i], ptxtSpace);
       if (delta_i_modP != 0) { // if not already 0 mod ptxtSpace
         delta_i_modP = NTL::MulMod(delta_i_modP, prodInv, ptxtSpace);
 

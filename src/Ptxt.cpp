@@ -160,10 +160,11 @@ typename Scheme::SlotType randomSlot(const Context& context);
 template <>
 BGV::SlotType randomSlot<BGV>(const Context& context)
 {
-  std::vector<long> coeffs(context.getOrdP());
-  NTL::VectorRandomBnd(coeffs.size(),
-                       coeffs.data(),
-                       context.getSlotRing()->p2r);
+  NTL::ZZX coeffs(context.getOrdP());
+  auto p2r = context.getSlotRing()->p2r;
+  for (long i = 0; i < NTL::deg(coeffs); ++i) {
+    NTL::SetCoeff(coeffs, i, NTL::RandomBnd(p2r));
+  }
   return PolyMod(coeffs, context.getSlotRing());
 }
 
@@ -709,10 +710,11 @@ Ptxt<BGV>& Ptxt<BGV>::frobeniusAutomorph(long j)
   long d = context->getOrdP();
   if (d == 1)
     return *this; // Nothing to do.
-  long exponent = NTL::PowerMod(context->getSlotRing()->p,
+  NTL::ZZ exponent = NTL::PowerMod(context->getSlotRing()->p,
                                 mcMod(j, d),
-                                context->getZMStar().getM());
-  return automorph(exponent);
+                               NTL::ZZ(context->getZMStar().getM()));
+  long exponent_ = NTL::to_long(exponent);
+  return automorph(exponent_);
 }
 
 template <typename Scheme>
@@ -889,7 +891,7 @@ template <>
 PA_GF2::RX Ptxt<BGV>::slotsToRX<PA_GF2>() const
 {
   assertEq<LogicError>(context->getAlMod().getPPowR(),
-                       2l,
+                       NTL::ZZ(2),
                        "Plaintext modulus p^r must be equal to 2^1");
   return NTL::conv<NTL::GF2X>(getPolyRepr());
 }
@@ -899,7 +901,7 @@ template <>
 PA_zz_p::RX Ptxt<BGV>::slotsToRX<PA_zz_p>() const
 {
   assertNeq<LogicError>(context->getAlMod().getPPowR(),
-                        2l,
+                        NTL::ZZ(2),
                         "Plaintext modulus p^r must not be equal to 2^1");
   return NTL::conv<NTL::zz_pX>(getPolyRepr());
 }
@@ -925,9 +927,9 @@ template <>
 template <typename type>
 NTL::ZZX Ptxt<BGV>::automorph_internal(long k)
 {
-  NTL::zz_pContext pContext;
+  NTL::ZZ_pContext pContext;
   pContext.save();
-  NTL::zz_p::init(context->getSlotRing()->p2r);
+  NTL::ZZ_p::init(context->getSlotRing()->p2r);
   long m = context->getM();
   auto old_slots = slotsToRX<type>();
   decltype(old_slots) new_slots;

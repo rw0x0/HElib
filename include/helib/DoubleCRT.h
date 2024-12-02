@@ -379,7 +379,7 @@ public:
   NTL::xdouble sampleUniform(const NTL::ZZ& B);
 
   // used to implement modulus switching
-  void scaleDownToSet(const IndexSet& s, long ptxtSpace, NTL::ZZX& delta);
+  void scaleDownToSet(const IndexSet& s, NTL::ZZ& ptxtSpace, NTL::ZZX& delta);
 
   void FFT(const NTL::ZZX& poly, const IndexSet& s);
   void FFT(const zzX& poly, const IndexSet& s);

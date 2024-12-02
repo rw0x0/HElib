@@ -309,7 +309,7 @@ void EncryptedArrayDerived<type>::shift(Ctxt& ctxt, long k) const
 
   // Shifting by more than the number of slots gives an all-zero ciphertext
   if (k <= -nSlots || k >= nSlots) {
-    ctxt.multByConstant(NTL::to_ZZ(0));
+    ctxt.multByConstant(NTL::ZZ(0));
     return;
   }
 
@@ -504,7 +504,7 @@ void EncryptedArrayDerived<type>::initNormalBasisMatrix() const
     restoreContextForG();
 
     long d = RE::degree();
-    long p = getPAlgebra().getP();
+    NTL::ZZ p = getPAlgebra().getP();
     long r = tab.getR();
 
     // compute change of basis matrix CB
@@ -531,10 +531,10 @@ void EncryptedArrayDerived<type>::initNormalBasisMatrix() const
       conv(CB1, CB);
 
       {
-        NTL::zz_pBak bak1;
+        NTL::ZZ_pBak bak1;
         bak1.save();
-        NTL::zz_p::init(p);
-        NTL::Mat<NTL::zz_p> CB2;
+        NTL::ZZ_p::init(p);
+        NTL::Mat<NTL::ZZ_p> CB2;
         conv(CB2, CB1);
         got_it = determinant(CB2) != 0;
       }
@@ -777,7 +777,7 @@ void EncryptedArrayDerived<type>::buildLinPolyCoeffs(
 
     HELIB_NTIMER_START(buildLinPolyCoeffs_invert);
 
-    long p = getPAlgebra().getP();
+    NTL::ZZ p = getPAlgebra().getP();
     long r = tab.getR();
 
     NTL::Mat<RE> M1;
@@ -1652,10 +1652,10 @@ public:
   {
     PA_BOILER(type)
 
-    long p = ea.getPAlgebra().getP();
+    NTL::ZZ p = ea.getPAlgebra().getP();
 
     j = mcMod(j, d);
-    RX H = NTL::PowerMod(RX(1, 1), NTL::power_ZZ(p, j), G);
+    RX H = NTL::PowerMod(RX(1, 1), NTL::power(p, j), G);
 
     for (long i = 0; i < n; i++)
       data[i] = NTL::CompMod(data[i], H, G);
@@ -1669,11 +1669,11 @@ public:
 
     assertEq(vec.length(), n, "vec has incorrect length");
 
-    long p = ea.getPAlgebra().getP();
+    NTL::ZZ p = ea.getPAlgebra().getP();
 
     for (long i = 0; i < n; i++) {
       long j = mcMod(vec[i], d);
-      RX H = NTL::PowerMod(RX(1, 1), NTL::power_ZZ(p, j), G);
+      RX H = NTL::PowerMod(RX(1, 1), NTL::power(p, j), G);
       data[i] = NTL::CompMod(data[i], H, G);
     }
   }

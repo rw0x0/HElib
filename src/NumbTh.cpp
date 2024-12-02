@@ -55,6 +55,16 @@ long mcMod(long a, long b)
     return r;
 }
 
+NTL::ZZ mcMod_ZZ(NTL::ZZ& a, NTL::ZZ& b)
+{
+  NTL::ZZ r = a % b;
+
+  if (r != 0 && (b < 0) != (r < 0))
+    return r + b;
+  else
+    return r;
+}
+
 long mcDiv(long a, long b)
 {
 
@@ -76,6 +86,22 @@ long multOrd(long p, long m)
   p = p % m;
   long ord = 1;
   long val = p;
+  while (val != 1) {
+    ord++;
+    val = NTL::MulMod(val, p, m);
+  }
+  return ord;
+}
+
+// return multiplicative order of p modulo m, or 0 if GCD(p, m) != 1
+long multOrd(const NTL::ZZ& p_, const NTL::ZZ& m)
+{
+  if (NTL::GCD(p_, m) != 1)
+    return 0;
+
+  NTL::ZZ p = p_ % m;
+  long ord = 1;
+  NTL::ZZ val = p;
   while (val != 1) {
     ord++;
     val = NTL::MulMod(val, p, m);
@@ -345,7 +371,7 @@ static void compOrder(std::vector<long>& orders,
 long findGenerators(std::vector<long>& gens,
                     std::vector<long>& ords,
                     long m,
-                    long p,
+                    NTL::ZZ& p,
                     const std::vector<long>& candidates)
 {
   gens.clear();
@@ -873,6 +899,27 @@ void MulMod(NTL::ZZX& out,
   out.normalize();
 }
 
+void MulMod(NTL::ZZX& out,
+            const NTL::ZZX& f,
+            NTL::ZZ& a,
+            NTL::ZZ& q,
+            bool abs /*default=false*/)
+{
+  long n = f.rep.length();
+  out.rep.SetLength(n);
+
+  NTL::ZZ c;
+  for (long i : range(n)) {
+    rem(c, f.rep[i], q);
+    c = NTL::MulMod(c, a, q); // returns c \in [0,q-1]
+    if (!abs && c >= q / 2)
+      c -= q;
+    out.rep[i] = c;
+  }
+
+  out.normalize();
+}
+
 void balanced_MulMod(NTL::ZZX& out, const NTL::ZZX& f, long a, long q)
 {
   long n = f.rep.length();
@@ -882,6 +929,23 @@ void balanced_MulMod(NTL::ZZX& out, const NTL::ZZX& f, long a, long q)
   for (long i : range(n)) {
     long c = rem(f.rep[i], q);
     c = NTL::MulModPrecon(c, a, q, aqinv); // returns c \in [0,q-1]
+    if (c > q / 2 || (q % 2 == 0 && c == q / 2 && NTL::RandomBnd(2)))
+      c -= q;
+    out.rep[i] = c;
+  }
+
+  out.normalize();
+}
+
+void balanced_MulMod(NTL::ZZX& out, const NTL::ZZX& f, NTL::ZZ& a, NTL::ZZ& q)
+{
+  long n = f.rep.length();
+  out.rep.SetLength(n);
+
+  for (long i : range(n)) {
+    NTL::ZZ c;
+    rem(c, f.rep[i], q);
+    c = NTL::MulMod(c, a, q); // returns c \in [0,q-1]
     if (c > q / 2 || (q % 2 == 0 && c == q / 2 && NTL::RandomBnd(2)))
       c -= q;
     out.rep[i] = c;
@@ -1110,10 +1174,44 @@ void buildLinPolyMatrix(NTL::mat_zz_pE& M, long p)
       M[i][j] = power(M[i - 1][j], p);
 }
 
+void buildLinPolyMatrix(NTL::mat_zz_pE& M, const NTL::ZZ& p)
+{
+  long d = NTL::zz_pE::degree();
+
+  M.SetDims(d, d);
+
+  for (long j = 0; j < d; j++)
+    NTL::conv(M[0][j], NTL::zz_pX(j, 1));
+
+  for (long i = 1; i < d; i++)
+    for (long j = 0; j < d; j++)
+      M[i][j] = power(M[i - 1][j], p);
+}
+
+
 void buildLinPolyMatrix(NTL::mat_GF2E& M, long p)
 {
   assertEq<InvalidArgument>(p,
                             2l,
+                            "p is not 2 when building "
+                            "a mat_GF2E (Galois field 2)");
+
+  long d = NTL::GF2E::degree();
+
+  M.SetDims(d, d);
+
+  for (long j = 0; j < d; j++)
+    NTL::conv(M[0][j], NTL::GF2X(j, 1));
+
+  for (long i = 1; i < d; i++)
+    for (long j = 0; j < d; j++)
+      M[i][j] = power(M[i - 1][j], p);
+}
+
+void buildLinPolyMatrix(NTL::mat_GF2E& M, const NTL::ZZ& p)
+{
+  assertEq<InvalidArgument>(p,
+                            NTL::ZZ(2),
                             "p is not 2 when building "
                             "a mat_GF2E (Galois field 2)");
 
@@ -1368,17 +1466,16 @@ void ppsolve(NTL::vec_zz_pE& x,
 void ppsolve(NTL::vec_GF2E& x,
              const NTL::mat_GF2E& A,
              const NTL::vec_GF2E& b,
-             long p,
+             const NTL::ZZ& p,
              long r)
 {
   assertEq<InvalidArgument>(p,
-                            2l,
+                            NTL::ZZ(2),
                             "modulus p is not 2 with GF2E (Galois field 2)");
   assertEq<InvalidArgument>(r,
                             1l,
                             "Hensel lifting r is not 2 with"
                             " GF2E (Galois field 2)");
-
   NTL::GF2E det;
   solve(det, x, A, b);
   if (det == 0)
@@ -1513,7 +1610,7 @@ void ppInvert(NTL::mat_zz_p& X, const NTL::mat_zz_p& A, long p, long r)
 
 void buildLinPolyCoeffs(NTL::vec_zz_pE& C_out,
                         const NTL::vec_zz_pE& L,
-                        long p,
+                        const NTL::ZZ& p,
                         long r)
 {
   HELIB_TIMER_START;
@@ -1529,23 +1626,23 @@ void buildLinPolyCoeffs(NTL::vec_zz_pE& C_out,
 
 void buildLinPolyCoeffs(NTL::vec_GF2E& C_out,
                         const NTL::vec_GF2E& L,
-                        long p,
+                        const NTL::ZZ& p_,
                         long r)
 {
   HELIB_TIMER_START;
-  assertEq<InvalidArgument>(p,
-                            2l,
+  assertEq<InvalidArgument>(p_,
+                            NTL::ZZ(2),
                             "modulus p is not 2 with GF2E (Galois field 2)");
   assertEq<InvalidArgument>(r,
                             1l,
                             "Hensel lifting r is not 2 "
                             "with GF2E (Galois field 2)");
-
+  auto p = NTL::to_long(p_);
   NTL::mat_GF2E M;
   buildLinPolyMatrix(M, p);
 
   NTL::vec_GF2E C;
-  ppsolve(C, M, L, p, r);
+  ppsolve(C, M, L, p_, r);
 
   C_out = C;
   HELIB_TIMER_STOP;

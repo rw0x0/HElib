@@ -47,7 +47,8 @@ namespace helib {
 
 void mapTo01(const EncryptedArray& ea, Ctxt& ctxt, bool multithread)
 {
-  long p = ctxt.getPtxtSpace();
+  long p = NTL::to_long(ctxt.getPtxtSpace());
+  assertEq(NTL::ZZ(p), ctxt.getPtxtSpace(), "ptxtSpace must fit in a long");
   if (p != ea.getPAlgebra().getP()) // ptxt space is p^r for r>1
     throw LogicError("mapTo01 not implemented for r>1");
 
@@ -102,7 +103,7 @@ template void mapTo01(const EncryptedArray&, Ptxt<CKKS>& ptxt);
 // O(log d) automorphisms and multiplications
 void fastPower(Ctxt& ctxt, long d)
 {
-  assertEq(ctxt.getPtxtSpace(), 2l, "ptxtSpace must be 2");
+  assertEq(ctxt.getPtxtSpace(), NTL::ZZ(2), "ptxtSpace must be 2");
   if (d <= 1)
     return;
 

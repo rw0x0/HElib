@@ -404,12 +404,12 @@ class Ctxt
   const PubKey& pubKey;        // points to the public encryption key;
   std::vector<CtxtPart> parts; // the ciphertext parts
   IndexSet primeSet; // the primes relative to which the parts are defined
-  long ptxtSpace;    // plaintext space for this ciphertext (either p or p^r)
+  NTL::ZZ ptxtSpace;    // plaintext space for this ciphertext (either p or p^r)
 
   // a high-probability bound on the noise magnitude
   NTL::xdouble noiseBound;
 
-  long intFactor; // an integer factor to divide by on decryption (for BGV)
+  NTL::ZZ intFactor; // an integer factor to divide by on decryption (for BGV)
   NTL::xdouble ratFactor; // rational factor to divide on decryption (for CKKS)
   NTL::xdouble ptxtMag;   // bound on the plaintext size (for CKKS)
 
@@ -500,7 +500,7 @@ class Ctxt
 
   // explicitly multiply intFactor by e, which should be
   // in the interval [0, ptxtSpace)
-  void mulIntFactor(long e);
+  void mulIntFactor(NTL::ZZ e);
 
 public:
   /**
@@ -517,7 +517,7 @@ public:
   // The default value of ctxtPrimes is kind of pointless.
 
   //__attribute__((deprecated))
-  explicit Ctxt(const PubKey& newPubKey, long newPtxtSpace = 0); // constructor
+  explicit Ctxt(const PubKey& newPubKey, NTL::ZZ newPtxtSpace = NTL::ZZ(0)); // constructor
 
   //__attribute__((deprecated))
   Ctxt(ZeroCtxtLike_type, const Ctxt& ctxt);
@@ -1215,7 +1215,7 @@ public:
   //! the side-effect of increasing the plaintext space to p^{r+e}.
   void multByP(long e = 1)
   {
-    long p2e = NTL::power_long(context.getP(), e);
+    NTL::ZZ p2e = NTL::power(context.getP(), e);
     ptxtSpace *= p2e;
     multByConstant(NTL::to_ZZ(p2e));
   }
@@ -1239,12 +1239,12 @@ public:
   ///@{
 
   //! Reduce plaintext space to a divisor of the original plaintext space
-  void reducePtxtSpace(long newPtxtSpace);
+  void reducePtxtSpace(NTL::ZZ& newPtxtSpace);
 
   // This method can be used to increase the plaintext space, but the
   // high-order digits that you get this way are noise. Do not use it
   // unless you know what you are doing.
-  void hackPtxtSpace(long newPtxtSpace) { ptxtSpace = newPtxtSpace; }
+  void hackPtxtSpace(NTL::ZZ& newPtxtSpace) { ptxtSpace = newPtxtSpace; }
 
   void bumpNoiseBound(double factor) { noiseBound *= factor; }
 
@@ -1374,7 +1374,7 @@ public:
   const Context& getContext() const { return context; }
   const PubKey& getPubKey() const { return pubKey; }
   const IndexSet& getPrimeSet() const { return primeSet; }
-  long getPtxtSpace() const { return ptxtSpace; }
+  NTL::ZZ getPtxtSpace() const { return ptxtSpace; }
   const NTL::xdouble& getNoiseBound() const { return noiseBound; }
   const NTL::xdouble& getRatFactor() const { return ratFactor; }
   const NTL::xdouble& getPtxtMag() const { return ptxtMag; }

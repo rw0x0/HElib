@@ -32,14 +32,14 @@ namespace helib {
 /******************** KeySwitch implementation **********************/
 /********************************************************************/
 
-KeySwitch::KeySwitch(long sPow, long xPow, long fromID, long toID, long p) :
+KeySwitch::KeySwitch(long sPow, long xPow, long fromID, long toID, NTL::ZZ p) :
     fromKey(sPow, xPow, fromID), toKeyID(toID), ptxtSpace(p)
 {}
 
 KeySwitch::KeySwitch(const SKHandle& _fromKey,
                      UNUSED long fromID,
                      long toID,
-                     long p) :
+                     NTL::ZZ p) :
     fromKey(_fromKey), toKeyID(toID), ptxtSpace(p)
 {}
 
@@ -81,7 +81,7 @@ void KeySwitch::verify(SecKey& sk)
   long fromXPower = fromKey.getPowerOfX();
   long fromIdx = fromKey.getSecretKeyID();
   long toIdx = toKeyID;
-  long p = ptxtSpace;
+  NTL::ZZ p = ptxtSpace;
   long n = b.size();
 
   std::cout << "KeySwitch::verify\n";
@@ -208,7 +208,7 @@ void KeySwitch::writeTo(std::ostream& str) const
 
   fromKey.writeTo(str);
   write_raw_int(str, toKeyID);
-  write_raw_int(str, ptxtSpace);
+  write_raw_ZZ(str, ptxtSpace);
 
   write_raw_vector(str, b);
 
@@ -288,7 +288,8 @@ void KeySwitch::readJSON(const JsonWrapper& jw, const Context& context)
 
   this->fromKey = SKHandle::readFromJSON(wrap(j.at("fromKey")));
   this->toKeyID = j.at("toKeyID");
-  this->ptxtSpace = j.at("ptxtSpace");
+  NTL::ZZ tmp = j.at("ptxtSpace");
+  this->ptxtSpace = tmp;
   this->b = readVectorFromJSON<DoubleCRT>(j.at("b"), context);
   this->prgSeed = j.at("prgSeed").get<NTL::ZZ>();
   this->noiseBound = j.at("noiseBound").get<NTL::xdouble>();

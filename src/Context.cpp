@@ -94,7 +94,7 @@ struct Context::BootStrapParams
 
 struct Context::SerializableContent
 {
-  long p;
+  NTL::ZZ p;
   long r;
   long m;
   std::vector<long> gens;
@@ -116,7 +116,7 @@ struct Context::SerializableContent
 long FindM(long k,
            long nBits,
            long c,
-           long p,
+           NTL::ZZ& p,
            long d,
            long s,
            long chosen_m,
@@ -165,8 +165,9 @@ long FindM(long k,
   // find the first m satisfying phi(m)>=N and d | ord(p) in Z_m^*
   // and phi(m)/ord(p) >= s
   if (chosen_m) {
-    if (NTL::GCD(p, chosen_m) == 1) {
-      long ordP = multOrd(p, chosen_m);
+    auto chosen_m_ = NTL::ZZ(chosen_m);
+    if (NTL::GCD(p, chosen_m_) == 1) {
+      long ordP = multOrd(p, chosen_m_);
       if (d == 0 || ordP % d == 0) {
         // chosen_m is OK
         m = chosen_m;
@@ -218,9 +219,10 @@ long FindM(long k,
     };
     // clang-format on
     for (i = 0; i < sizeof(ms) / sizeof(long[4]); i++) {
-      if (ms[i][0] < N || NTL::GCD(p, ms[i][1]) != 1)
+      auto ms_i1 = NTL::ZZ(ms[i][1]);
+      if (ms[i][0] < N || NTL::GCD(p, ms_i1) != 1)
         continue;
-      long ordP = multOrd(p, ms[i][1]);
+      long ordP = multOrd(p, ms_i1);
       long nSlots = ms[i][0] / ordP;
       if (d != 0 && ordP % d != 0)
         continue;
@@ -238,10 +240,11 @@ long FindM(long k,
   if (m == 0) {
     // search only for odd values of m, to make phi(m) a little closer to m
     for (long candidate = N | 1; candidate < 10 * N; candidate += 2) {
-      if (NTL::GCD(p, candidate) != 1)
+      auto candidate_ = NTL::ZZ(candidate);
+      if (NTL::GCD(p, candidate_) != 1)
         continue;
 
-      long ordP = multOrd(p, candidate); // the multiplicative order of p mod m
+      long ordP = multOrd(p, candidate_); // the multiplicative order of p mod m
       if (d > 1 && ordP % d != 0)
         continue;
       if (ordP > 100)
@@ -327,7 +330,7 @@ void Context::writeTo(std::ostream& str) const
 
   writeEyeCatcher(str, EyeCatcher::CONTEXT_BEGIN);
 
-  write_raw_int(str, this->zMStar.getP());
+  write_raw_ZZ(str, this->zMStar.getP());
   write_raw_int(str, this->alMod.getR());
   write_raw_int(str, this->zMStar.getM());
 
@@ -461,7 +464,8 @@ Context::SerializableContent Context::readParamsFromJSON(
 
     // This way stops ordering inconsistencies
     content.m = j.at("m");
-    content.p = j.at("p");
+    NTL::ZZ tmp = j.at("p");
+    content.p = tmp;
     content.r = j.at("r");
     content.gens = j.at("gens").get<std::vector<long>>();
     content.ords = j.at("ords").get<std::vector<long>>();
@@ -598,7 +602,7 @@ NTL::ZZX getG(const EncryptedArray& ea)
 // Constructors must ensure that alMod points to zMStar, and
 // rcEA (if set) points to rcAlmod which points to zMStar
 Context::Context(unsigned long m,
-                 unsigned long p,
+                 const NTL::ZZ& p,
                  unsigned long r,
                  const std::vector<long>& gens,
                  const std::vector<long>& ords) :
@@ -647,7 +651,7 @@ void Context::printout(std::ostream& out) const
 }
 
 Context::Context(long m,
-                 long p,
+                 const NTL::ZZ& p,
                  long r,
                  const std::vector<long>& gens,
                  const std::vector<long>& ords,
@@ -876,17 +880,17 @@ void Context::addSpecialPrimes(long nDgts,
                                long bitsInSpecialPrimes)
 {
   const PAlgebra& palg = getZMStar();
-  long p = std::abs(palg.getP()); // for CKKS, palg.getP() == -1
+  NTL::ZZ p = NTL::abs(palg.getP()); // for CKKS, palg.getP() == -1
   long m = palg.getM();
   long phim = palg.getPhiM();
-  long p2r = isCKKS() ? 1 : getAlMod().getPPowR();
+  NTL::ZZ p2r = isCKKS() ? NTL::ZZ(1) : getAlMod().getPPowR();
 
-  long p2e = p2r;
+  NTL::ZZ p2e = p2r;
   if (willBeBootstrappable && !isCKKS()) {
     // bigger p^e for bootstrapping
     long e, ePrime;
     RecryptData::setAE(e, ePrime, *this);
-    p2e *= NTL::power_long(p, e - ePrime);
+    p2e *= NTL::power(p, e - ePrime);
 
     // initialize e and ePrime parameters in the context
     this->e_param = e;
@@ -966,15 +970,15 @@ void Context::addSpecialPrimes(long nDgts,
                0.5 * std::log(h)) /
               std::log(2.0);
     } else if (palg.getPow2()) {
-      nBits = (maxDigitLog + std::log(p2e) + NTL::log(getStdev()) +
+      nBits = (maxDigitLog + NTL::log(p2e) + NTL::log(getStdev()) +
                0.5 * std::log(12.0) + std::log(nDgts) -
-               0.5 * std::log(log_phim) - 2 * std::log(p) - std::log(h)) /
+               0.5 * std::log(log_phim) - 2 * NTL::log(p) - std::log(h)) /
               std::log(2.0);
     } else {
       nBits =
-          (maxDigitLog + std::log(m) + std::log(p2e) + NTL::log(getStdev()) +
+          (maxDigitLog + std::log(m) + NTL::log(p2e) + NTL::log(getStdev()) +
            0.5 * std::log(12.0) + std::log(nDgts) - 0.5 * log_phim -
-           0.5 * std::log(log_phim) - 2 * std::log(p) - std::log(h)) /
+           0.5 * std::log(log_phim) - 2 * NTL::log(p) - std::log(h)) /
           std::log(2.0);
     }
 
