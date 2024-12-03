@@ -48,3 +48,14 @@ C_FUNC ZZ_bytes(void *ZZ, long *len) {
     *len = NumBytes(*ZZ_);
     return S_OK;
 }
+
+C_FUNC ZZ_random(void **ZZ, void *mod_ZZ) {
+    IfNullRet(ZZ, E_POINTER);
+    *ZZ = new NTL::ZZ;
+    NTL::ZZ *ZZ_ = FromVoid<NTL::ZZ>(ZZ);
+    IfNullRet(ZZ_, E_POINTER);
+    NTL::ZZ *mod_ZZ_ = FromVoid<NTL::ZZ>(mod_ZZ);
+    IfNullRet(mod_ZZ_, E_POINTER);
+    NTL::RandomBnd(*ZZ_, *mod_ZZ_);
+    return S_OK;
+}
