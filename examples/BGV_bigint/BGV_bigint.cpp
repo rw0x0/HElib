@@ -52,7 +52,7 @@ int test_basic_math_operations(const NTL::ZZ& p1, const NTL:: ZZ& p2,const helib
 
     // Compare the result
     NTL::ZZ p3 = (p1 + p2) % p;
-    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    NTL::ZZ p3_is = decrypted[0];
     std::cout << "Decrypted result: " << p3_is << std::endl;
     if (p3 == p3_is)
         std::cout << "Decryption is correct!" << std::endl;
@@ -78,7 +78,7 @@ int test_basic_math_operations(const NTL::ZZ& p1, const NTL:: ZZ& p2,const helib
 
     // Compare the result
     NTL::ZZ p3 = (p1 + p2) % p;
-    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    NTL::ZZ p3_is = decrypted[0];
     std::cout << "Decrypted result: " << p3_is << std::endl;
     if (p3 == p3_is)
         std::cout << "Decryption is correct!" << std::endl;
@@ -103,7 +103,7 @@ int test_basic_math_operations(const NTL::ZZ& p1, const NTL:: ZZ& p2,const helib
 
     // Compare the result
     NTL::ZZ p3 = (p1 + p - p2) % p;
-    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    NTL::ZZ p3_is = decrypted[0];
     std::cout << "Decrypted result: " << p3_is << std::endl;
     if (p3 == p3_is)
         std::cout << "Decryption is correct!" << std::endl;
@@ -128,7 +128,7 @@ int test_basic_math_operations(const NTL::ZZ& p1, const NTL:: ZZ& p2,const helib
 
     // Compare the result
     NTL::ZZ p3 = (p1 + p - p2) % p;
-    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    NTL::ZZ p3_is = decrypted[0];
     std::cout << "Decrypted result: " << p3_is << std::endl;
     if (p3 == p3_is)
         std::cout << "Decryption is correct!" << std::endl;
@@ -154,7 +154,7 @@ int test_basic_math_operations(const NTL::ZZ& p1, const NTL:: ZZ& p2,const helib
 
     // Compare the result
     NTL::ZZ p3 = (p1 * p2) % p;
-    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    NTL::ZZ p3_is = decrypted[0];
     std::cout << "Decrypted result: " << p3_is << std::endl;
     if (p3 == p3_is)
         std::cout << "Decryption is correct!" << std::endl;
@@ -179,7 +179,7 @@ int test_basic_math_operations(const NTL::ZZ& p1, const NTL:: ZZ& p2,const helib
 
     // Compare the result
     NTL::ZZ p3 = (p1 * p2) % p;
-    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    NTL::ZZ p3_is = decrypted[0];
     std::cout << "Decrypted result: " << p3_is << std::endl;
     if (p3 == p3_is)
         std::cout << "Decryption is correct!" << std::endl;
