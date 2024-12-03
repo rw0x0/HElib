@@ -134,6 +134,11 @@ set(HELIB_SRCS
     "timing.cpp"
     "zzX.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/version.cpp" # version.cpp is auto-generated in CMAKE_CURRENT_BINARY_DIR
+    "c/c_context.cpp"
+    "c/c_ctxt.cpp"
+    "c/c_ntl_ZZ.cpp"
+    "c/c_pubkey.cpp"
+    "c/c_seckey.cpp"
     )
 
 set(HELIB_HEADERS
@@ -197,6 +202,12 @@ set(HELIB_HEADERS
     "${HELIB_HEADER_DIR}/zeroValue.h"
     "${HELIB_HEADER_DIR}/EncodedPtxt.h"
     "${CMAKE_CURRENT_BINARY_DIR}/helib/version.h" # version.h is auto-generated in CMAKE_CURRENT_BINARY_DIR
+    "${HELIB_HEADER_DIR}/c/c.h"
+    "${HELIB_HEADER_DIR}/c/c_context.h"
+    "${HELIB_HEADER_DIR}/c/c_ctxt.h"
+    "${HELIB_HEADER_DIR}/c/c_ntl_ZZ.h"
+    "${HELIB_HEADER_DIR}/c/c_pubkey.h"
+    "${HELIB_HEADER_DIR}/c/c_seckey.h"
     )
 
 set(HELIB_PRIVATE_HEADERS
@@ -204,10 +215,10 @@ set(HELIB_PRIVATE_HEADERS
 
 # Add helib target as a shared/static library
 if (BUILD_SHARED)
-  add_library(helib 
+  add_library(helib
               SHARED ${HELIB_SRCS} ${HELIB_HEADERS} ${HELIB_PRIVATE_HEADERS})
 else (BUILD_SHARED)
-  add_library(helib 
+  add_library(helib
               STATIC ${HELIB_SRCS} ${HELIB_HEADERS} ${HELIB_PRIVATE_HEADERS})
 endif (BUILD_SHARED)
 

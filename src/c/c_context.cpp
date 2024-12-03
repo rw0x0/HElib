@@ -1,7 +1,7 @@
-#include <helib/c/c.h>
+#include <helib/c/c_context.h>
 #include <helib/helib.h>
 
-C_FUNC context_build(void **context, long m, void* p, long bits) {
+C_FUNC context_build(void **context, long m, void *p, long bits) {
 
     NTL::ZZ *p_ = FromVoid<NTL::ZZ>(p);
     IfNullRet(p_, E_POINTER);
