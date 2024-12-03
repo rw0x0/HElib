@@ -19,3 +19,20 @@ C_FUNC seckey_destroy(void *seckey) {
     delete seckey_;
     return S_OK;
 }
+
+C_FUNC seckey_encrypt(void **ctxt, void *seckey, void *ptxt_ZZ) {
+    helib::SecKey *seckey_ = FromVoid<helib::SecKey>(seckey);
+    IfNullRet(seckey_, E_POINTER);
+    IfNullRet(ctxt, E_POINTER);
+
+    NTL::ZZ *ptxt_ZZ_ = FromVoid<NTL::ZZ>(ptxt_ZZ);
+    IfNullRet(ptxt_ZZ_, E_POINTER);
+
+    *ctxt = new helib::Ctxt(*seckey_);
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(*ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+
+    NTL::ZZX ptxt = NTL::ZZX(*ptxt_ZZ_);
+    seckey_->Encrypt(*ctxt_, ptxt);
+    return S_OK;
+}
