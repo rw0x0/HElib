@@ -194,5 +194,31 @@ int main(int argc, char* argv[])
     }
   }
 
+   {
+    // Multiplying the ciphertext with a plaintext
+    std::cout << std::endl;
+    std::cout << "Multiplying the ciphertext with a plaintext..." << std::endl;
+    auto ctxt3 = ctxt1;
+    ctxt3.multByConstant(p2);
+    // ctxt3.multByConstant(ptxt2);
+    std::cout << "Noise budget in ctxt3: " << ctxt3.bitCapacity() << std::endl;
+
+    // Decrypt the result
+    std::cout << "Decrypting the result.." << std::endl;
+    NTL::ZZX decrypted;
+    secret_key.Decrypt(decrypted, ctxt3);
+
+    // Compare the result
+    NTL::ZZ p3 = (p1 * p2) % p;
+    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    std::cout << "Decrypted result: " << p3_is << std::endl;
+    if (p3 == p3_is)
+        std::cout << "Decryption is correct!" << std::endl;
+    else {
+        std::cout << "Decryption is incorrect!" << std::endl;
+        error = 1;
+    }
+  }
+
   return error;
 }
