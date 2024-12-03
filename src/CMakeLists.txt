@@ -134,11 +134,11 @@ set(HELIB_SRCS
     "timing.cpp"
     "zzX.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/version.cpp" # version.cpp is auto-generated in CMAKE_CURRENT_BINARY_DIR
-    "c/c_context.cpp"
-    "c/c_ctxt.cpp"
-    "c/c_ntl_ZZ.cpp"
-    "c/c_pubkey.cpp"
-    "c/c_seckey.cpp"
+    "c_context.cpp"
+    "c_ctxt.cpp"
+    "c_ntl_ZZ.cpp"
+    "c_pubkey.cpp"
+    "c_seckey.cpp"
     )
 
 set(HELIB_HEADERS
@@ -202,12 +202,12 @@ set(HELIB_HEADERS
     "${HELIB_HEADER_DIR}/zeroValue.h"
     "${HELIB_HEADER_DIR}/EncodedPtxt.h"
     "${CMAKE_CURRENT_BINARY_DIR}/helib/version.h" # version.h is auto-generated in CMAKE_CURRENT_BINARY_DIR
-    "${HELIB_HEADER_DIR}/c/c.h"
-    "${HELIB_HEADER_DIR}/c/c_context.h"
-    "${HELIB_HEADER_DIR}/c/c_ctxt.h"
-    "${HELIB_HEADER_DIR}/c/c_ntl_ZZ.h"
-    "${HELIB_HEADER_DIR}/c/c_pubkey.h"
-    "${HELIB_HEADER_DIR}/c/c_seckey.h"
+    "${HELIB_HEADER_DIR}/c.h"
+    "${HELIB_HEADER_DIR}/c_context.h"
+    "${HELIB_HEADER_DIR}/c_ctxt.h"
+    "${HELIB_HEADER_DIR}/c_ntl_ZZ.h"
+    "${HELIB_HEADER_DIR}/c_pubkey.h"
+    "${HELIB_HEADER_DIR}/c_seckey.h"
     )
 
 set(HELIB_PRIVATE_HEADERS
