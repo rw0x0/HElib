@@ -22,6 +22,7 @@
 
 int main(int argc, char* argv[])
 {
+  int error =0;
   /*  Example of BGV scheme  */
 
   // Plaintext prime modulus
@@ -63,126 +64,84 @@ int main(int argc, char* argv[])
   context.printout();
   std::cout << std::endl;
 
-  // Print the security level
-  std::cout << "Security: " << context.securityLevel() << std::endl;
-
   // Secret key management
   std::cout << "Creating secret key..." << std::endl;
   // Create a secret key associated with the context
   helib::SecKey secret_key(context);
   // Generate the secret key
   secret_key.GenSecKey();
-//   std::cout << "Generating key-switching matrices..." << std::endl;
-//   // Compute key-switching matrices that we need
-//   helib::addSome1DMatrices(secret_key);
 
-//   // Public key management
-//   // Set the secret key (upcast: SecKey is a subclass of PubKey)
-//   const helib::PubKey& public_key = secret_key;
+  // Public key management
+  // Set the secret key (upcast: SecKey is a subclass of PubKey)
+  std::cout << "Creating public key..." << std::endl;
+  const helib::PubKey& public_key = secret_key;
 
-//   // Get the EncryptedArray of the context
-//   const helib::EncryptedArray& ea = context.getEA();
+  // Get two plaintexts
+  std::cout << "Encrypting two plaintexts..." << std::endl;
+  NTL::ZZ p1 = NTL::ZZ(5);
+  NTL::ZZ p2 = NTL::ZZ(10);
+  NTL::ZZX ptxt1 = NTL::ZZX(p1);
+  NTL::ZZX ptxt2 = NTL::ZZX(p2);
 
-//   // Get the number of slot (phi(m))
-//   long nslots = ea.size();
-//   std::cout << "Number of slots: " << nslots << std::endl;
+  // Encrypt the two plaintexts
+  helib::Ctxt ctxt1(public_key);
+  public_key.Encrypt(ctxt1, ptxt1);
 
-//   // Create a vector of long with nslots elements
-//   helib::Ptxt<helib::BGV> ptxt(context);
-//   // Set it with numbers 0..nslots - 1
-//   // ptxt = [0] [1] [2] ... [nslots-2] [nslots-1]
-//   for (int i = 0; i < ptxt.size(); ++i) {
-//     ptxt[i] = i;
-//   }
+  helib::Ctxt ctxt2(public_key);
+  public_key.Encrypt(ctxt2, ptxt2);
 
-//   // Print the plaintext
-//   std::cout << "Initial Plaintext: " << ptxt << std::endl;
+  std::cout << "Noise budget in ctxt1: " << ctxt1.bitCapacity() << std::endl;
+  std::cout << "Noise budget in ctxt2: " << ctxt2.bitCapacity() << std::endl;
 
-//   // Create a ciphertext object
-//   helib::Ctxt ctxt(public_key);
-//   // Encrypt the plaintext using the public_key
-//   public_key.Encrypt(ctxt, ptxt);
+ {
+    // Adding the ciphertexts
+    std::cout << std::endl;
+    std::cout << "Adding the two ciphertexts..." << std::endl;
+    auto ctxt3 = ctxt1;
+    ctxt3 += ctxt2;
+    std::cout << "Noise budget in ctxt3: " << ctxt3.bitCapacity() << std::endl;
 
-//   /********** Operations **********/
-//   // Ciphertext and plaintext operations are performed
-//   // "entry-wise".
+    // Decrypt the result
+    std::cout << "Decrypting the result.." << std::endl;
+    NTL::ZZX decrypted;
+    secret_key.Decrypt(decrypted, ctxt3);
 
-//   // Square the ciphertext
-//   // [0] [1] [2] [3] [4] ... [nslots-1]
-//   // -> [0] [1] [4] [9] [16] ... [(nslots-1)*(nslots-1)]
-//   ctxt.multiplyBy(ctxt);
-//   // Plaintext version
-//   ptxt.multiplyBy(ptxt);
+    // Compare the result
+    NTL::ZZ p3 = (p1 + p2) % p;
+    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    std::cout << "Decrypted result: " << p3_is << std::endl;
+    if (p3 == p3_is)
+        std::cout << "Decryption is correct!" << std::endl;
+    else {
+        std::cout << "Decryption is incorrect!" << std::endl;
+        error = 1;
+    }
+  }
 
-//   // Divide the ciphertext by itself
-//   // To do this we must calculate the multiplicative inverse using Fermat's
-//   // Little Theorem.  We calculate a^{-1} = a^{p-2} mod p, where a is non-zero
-//   // and p is our plaintext prime.
-//   // First make a copy of the ctxt using copy constructor
-//   helib::Ctxt ctxt_divisor(ctxt);
-//   // Raise the copy to the exponent p-2
-//   // [0] [1] [4] ... [16] -> [0] [1] [1] ... [1]
-//   // Note: 0 is a special case because 0^n = 0 for any power n
-//   ctxt_divisor.power(p - 2);
-//   // a^{p-2}*a = a^{-1}*a = a / a = 1;
-//   ctxt.multiplyBy(ctxt_divisor);
+  {
+    // Subtracting the ciphertexts
+    std::cout << std::endl;
+    std::cout << "Subtracting the two ciphertexts..." << std::endl;
+    auto ctxt3 = ctxt1;
+    ctxt3 -= ctxt2;
+    std::cout << "Noise budget in ctxt3: " << ctxt3.bitCapacity() << std::endl;
 
-//   // Plaintext version
-//   helib::Ptxt<helib::BGV> ptxt_divisor(ptxt);
-//   ptxt_divisor.power(p - 2);
-//   ptxt.multiplyBy(ptxt_divisor);
+    // Decrypt the result
+    std::cout << "Decrypting the result.." << std::endl;
+    NTL::ZZX decrypted;
+    secret_key.Decrypt(decrypted, ctxt3);
 
-//   // Double it (using additions)
-//   // [0] [1] [1] ... [1] [1] -> [0] [2] [2] ... [2] [2]
-//   ctxt += ctxt;
-//   // Plaintext version
-//   ptxt += ptxt;
+    // Compare the result
+    NTL::ZZ p3 = (p1 + p - p2) % p;
+    NTL::ZZ p3_is = NTL::conv<NTL::ZZ>(decrypted[0]);
+    std::cout << "Decrypted result: " << p3_is << std::endl;
+    if (p3 == p3_is)
+        std::cout << "Decryption is correct!" << std::endl;
+    else {
+        std::cout << "Decryption is incorrect!" << std::endl;
+        error = 1;
+    }
+  }
 
-//   // Subtract it from itself (result should be 0)
-//   // i.e. [0] [0] [0] [0] ... [0] [0]
-//   ctxt -= ctxt;
-//   // Plaintext version
-//   ptxt -= ptxt;
-
-//   // Create a plaintext for decryption
-//   helib::Ptxt<helib::BGV> plaintext_result(context);
-//   // Decrypt the modified ciphertext
-//   secret_key.Decrypt(plaintext_result, ctxt);
-
-//   std::cout << "Operation: 2(a*a)/(a*a) - 2(a*a)/(a*a) = 0" << std::endl;
-//   // Print the decrypted plaintext
-//   // Should be [0] [0] [0] ... [0] [0]
-//   std::cout << "Decrypted Result: " << plaintext_result << std::endl;
-//   // Print the plaintext version result, should be the same as the ctxt version
-//   std::cout << "Plaintext Result: " << ptxt << std::endl;
-
-//   // We can also add constants
-//   // [0] [0] [0] ... [0] [0] -> [1] [1] [1] ... [1] [1]
-//   ctxt.addConstant(NTL::ZZX(1l));
-//   // Plaintext version
-//   ptxt.addConstant(NTL::ZZX(1l));
-
-//   // And multiply by constants
-//   // [1] [1] [1] ... [1] [1]
-//   // -> [1*1] [1*1] [1*1] ... [1*1] [1*1] = [1] [1] [1] ... [1] [1]
-//   ctxt *= 1l;
-//   // Plaintext version
-//   ptxt *= 1l;
-
-//   // We can also perform ciphertext-plaintext operations
-//   // ctxt = [1] [1] [1] ... [1] [1], ptxt = [1] [1] [1] ... [1] [1]
-//   // ctxt + ptxt = [2] [2] [2] ... [2] [2]
-//   // Note: the output of this is also a ciphertext
-//   ctxt += ptxt;
-
-//   // Decrypt the modified ciphertext into a new plaintext
-//   helib::Ptxt<helib::BGV> new_plaintext_result(context);
-//   secret_key.Decrypt(new_plaintext_result, ctxt);
-
-//   std::cout << "Operation: Enc{(0 + 1)*1} + (0 + 1)*1" << std::endl;
-//   // Print the decrypted plaintext
-//   // Should be [2] [2] [2] ... [2] [2]
-//   std::cout << "Decrypted Result: " << new_plaintext_result << std::endl;
-
-  return 0;
+  return error;
 }
