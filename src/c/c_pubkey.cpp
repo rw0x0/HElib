@@ -1,4 +1,4 @@
-#include <helib/c/c_pubkey.h>
+#include <helib/c_pubkey.h>
 #include <helib/helib.h>
 
 C_FUNC pubkey_build(void **pubkey, void *context) {

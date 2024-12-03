@@ -1,4 +1,4 @@
-#include <helib/c/c_context.h>
+#include <helib/c_context.h>
 #include <helib/helib.h>
 
 C_FUNC context_build(void **context, long m, void *p, long bits) {

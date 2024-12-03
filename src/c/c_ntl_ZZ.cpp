@@ -1,4 +1,4 @@
-#include <helib/c/c_ntl_ZZ.h>
+#include <helib/c_ntl_ZZ.h>
 #include <NTL/ZZ.h>
 #include <NTL/tools.h>
 

@@ -1,4 +1,4 @@
-#include <helib/c/c_seckey.h>
+#include <helib/c_seckey.h>
 #include <helib/helib.h>
 
 C_FUNC seckey_build(void **seckey, void *context) {

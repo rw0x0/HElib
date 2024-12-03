@@ -1,6 +1,6 @@
 #pragma once
 
-#include <helib/c/c.h>
+#include <helib/c.h>
 
 C_FUNC ZZ_from_string(void **ZZ, const char *s);
 

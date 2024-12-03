@@ -1,4 +1,4 @@
-#include <helib/c/c_ctxt.h>
+#include <helib/c_ctxt.h>
 #include <helib/helib.h>
 
 C_FUNC ctxt_destroy(void *ctxt) {
