@@ -1,5 +1,5 @@
 #pragma once
 
-#include "helib/c.h"
+#include <helib/c.h>
 
 C_FUNC ctxt_destroy(void *ctxt);

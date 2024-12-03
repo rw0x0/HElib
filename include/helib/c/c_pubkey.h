@@ -1,6 +1,6 @@
 #pragma once
 
-#include "helib/c.h"
+#include <helib/c.h>
 
 C_FUNC pubkey_build(void **seckey, void *context);
 
