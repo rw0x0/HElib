@@ -29,3 +29,11 @@ C_FUNC context_destroy(void *context) {
     delete context_;
     return S_OK;
 }
+
+
+C_FUNC context_printout(void *context) {
+    helib::Context *context_ = FromVoid<helib::Context>(context);
+    IfNullRet(context_, E_POINTER);
+    context_->printout();
+    return S_OK;
+}
