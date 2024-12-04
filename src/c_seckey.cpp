@@ -37,6 +37,22 @@ C_FUNC seckey_encrypt(void **ctxt, void *seckey, void *ptxt_ZZ) {
     return S_OK;
 }
 
+C_FUNC seckey_packed_encrypt(void **ctxt, void *seckey, void *ptxt_ZZX) {
+    helib::SecKey *seckey_ = FromVoid<helib::SecKey>(seckey);
+    IfNullRet(seckey_, E_POINTER);
+    IfNullRet(ctxt, E_POINTER);
+
+    NTL::ZZX *ptxt_ZZX_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_ZZX_, E_POINTER);
+
+    *ctxt = new helib::Ctxt(*seckey_);
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(*ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+
+    seckey_->Encrypt(*ctxt_, *ptxt_ZZX_);
+    return S_OK;
+}
+
 C_FUNC seckey_decrypt(void **ptxt_ZZ, void *seckey, void *ctxt) {
     helib::SecKey *seckey_ = FromVoid<helib::SecKey>(seckey);
     IfNullRet(seckey_, E_POINTER);
@@ -51,5 +67,20 @@ C_FUNC seckey_decrypt(void **ptxt_ZZ, void *seckey, void *ctxt) {
     NTL::ZZX decrypted;
     seckey_->Decrypt(decrypted, *ctxt_);
     *ZZ = decrypted[0];
+    return S_OK;
+}
+
+C_FUNC seckey_packed_decrypt(void **ptxt_ZZX, void *seckey, void *ctxt) {
+    helib::SecKey *seckey_ = FromVoid<helib::SecKey>(seckey);
+    IfNullRet(seckey_, E_POINTER);
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+
+    IfNullRet(ptxt_ZZX, E_POINTER);
+    *ptxt_ZZX = new NTL::ZZX;
+    NTL::ZZX *ZZX = FromVoid<NTL::ZZX>(*ptxt_ZZX);
+    IfNullRet(ZZX, E_POINTER);
+
+    seckey_->Decrypt(*ZZX, *ctxt_);
     return S_OK;
 }
