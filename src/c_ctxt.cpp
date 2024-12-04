@@ -16,6 +16,14 @@ C_FUNC ctxt_get_noise_budget(void *ctxt, long *noise_budget) {
     return S_OK;
 }
 
+C_FUNC ctxt_clone(void **des, void *src) {
+    IfNullRet(des, E_POINTER);
+    helib::Ctxt *src_ = FromVoid<helib::Ctxt>(src);
+    IfNullRet(src_, E_POINTER);
+    *des = new helib::Ctxt(*src_);
+    return S_OK;
+}
+
 // Arithmetic
 
 C_FUNC ctxt_add(void **result, void *ctxt1, void *ctxt2) {

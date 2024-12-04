@@ -6,6 +6,8 @@ C_FUNC ctxt_destroy(void *ctxt);
 
 C_FUNC ctxt_get_noise_budget(void *ctxt, long *noise_budget);
 
+C_FUNC ctxt_clone(void **des, void *src);
+
 // Arithmetic
 
 C_FUNC ctxt_add(void **result, void *ctxt1, void *ctxt2);

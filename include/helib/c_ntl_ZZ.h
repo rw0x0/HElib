@@ -15,3 +15,5 @@ C_FUNC ZZ_to_bytes(void *ZZ, unsigned char *buf, long len);
 C_FUNC ZZ_bytes(void *ZZ, long *len);
 
 C_FUNC ZZ_random(void **ZZ, void *mod_ZZ);
+
+C_FUNC ZZ_clone(void **des, void *src);

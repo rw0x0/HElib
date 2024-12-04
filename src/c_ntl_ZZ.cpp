@@ -59,3 +59,11 @@ C_FUNC ZZ_random(void **ZZ, void *mod_ZZ) {
     NTL::RandomBnd(*ZZ_, *mod_ZZ_);
     return S_OK;
 }
+
+C_FUNC ZZ_clone(void **des, void *src) {
+    IfNullRet(des, E_POINTER);
+    NTL::ZZ *src_ = FromVoid<NTL::ZZ>(src);
+    IfNullRet(src_, E_POINTER);
+    *des = new NTL::ZZ(*src_);
+    return S_OK;
+}
