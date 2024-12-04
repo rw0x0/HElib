@@ -137,6 +137,7 @@ set(HELIB_SRCS
     "c_context.cpp"
     "c_ctxt.cpp"
     "c_ntl_ZZ.cpp"
+    "c_ntl_ZZX.cpp"
     "c_pubkey.cpp"
     "c_seckey.cpp"
     )
@@ -206,6 +207,7 @@ set(HELIB_HEADERS
     "${HELIB_HEADER_DIR}/c_context.h"
     "${HELIB_HEADER_DIR}/c_ctxt.h"
     "${HELIB_HEADER_DIR}/c_ntl_ZZ.h"
+    "${HELIB_HEADER_DIR}/c_ntl_ZZX.h"
     "${HELIB_HEADER_DIR}/c_pubkey.h"
     "${HELIB_HEADER_DIR}/c_seckey.h"
     )
