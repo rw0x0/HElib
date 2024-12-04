@@ -22,7 +22,6 @@ C_FUNC context_build(void **context, long m, void *p, long bits) {
     return S_OK;
 }
 
-
 C_FUNC context_destroy(void *context) {
     helib::Context *context_ = FromVoid<helib::Context>(context);
     IfNullRet(context_, E_POINTER);
@@ -30,14 +29,12 @@ C_FUNC context_destroy(void *context) {
     return S_OK;
 }
 
-
 C_FUNC context_printout(void *context) {
     helib::Context *context_ = FromVoid<helib::Context>(context);
     IfNullRet(context_, E_POINTER);
     context_->printout();
     return S_OK;
 }
-
 
 C_FUNC context_get_security_level(void *context, double* security_level) {
     helib::Context *context_ = FromVoid<helib::Context>(context);
