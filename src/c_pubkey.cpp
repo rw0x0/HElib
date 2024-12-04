@@ -33,3 +33,19 @@ C_FUNC pubkey_encrypt(void **ctxt, void *pubkey, void *ptxt_ZZ) {
     pubkey_->Encrypt(*ctxt_, ptxt);
     return S_OK;
 }
+
+C_FUNC pubkey_packed_encrypt(void **ctxt, void *pubkey, void *ptxt_ZZX) {
+    helib::PubKey *pubkey_ = FromVoid<helib::PubKey>(pubkey);
+    IfNullRet(pubkey_, E_POINTER);
+    IfNullRet(ctxt, E_POINTER);
+
+    NTL::ZZX *ptxt_ZZX_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_ZZX_, E_POINTER);
+
+    *ctxt = new helib::Ctxt(*pubkey_);
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(*ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+
+    pubkey_->Encrypt(*ctxt_, *ptxt_ZZX_);
+    return S_OK;
+}
