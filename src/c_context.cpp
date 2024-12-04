@@ -37,3 +37,12 @@ C_FUNC context_printout(void *context) {
     context_->printout();
     return S_OK;
 }
+
+
+C_FUNC context_get_security_level(void *context, double* security_level) {
+    helib::Context *context_ = FromVoid<helib::Context>(context);
+    IfNullRet(context_, E_POINTER);
+    IfNullRet(security_level, E_POINTER);
+    *security_level = context_->securityLevel();
+    return S_OK;
+}
