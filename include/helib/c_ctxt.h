@@ -28,6 +28,16 @@ C_FUNC ctxt_sub_from_constant(void **result, void *ptxt_ZZ, void *ctxt);
 
 C_FUNC ctxt_mult_by_constant(void **result, void *ctxt, void *ptxt_ZZ);
 
+// Arithmetic with ZZX constants
+
+C_FUNC ctxt_add_by_packed_constant(void **result, void *ctxt, void *ptxt_ZZX);
+
+C_FUNC ctxt_sub_by_packed_constant(void **result, void *ctxt, void *ptxt_ZZX);
+
+C_FUNC ctxt_sub_from_packed_constant(void **result, void *ptxt_ZZX, void *ctxt);
+
+C_FUNC ctxt_mult_by_packed_constant(void **result, void *ctxt, void *ptxt_ZZX);
+
 // Arithmetic in place
 
 C_FUNC ctxt_add_inplace(void *ctxt1, void *ctxt2);

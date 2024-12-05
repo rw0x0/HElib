@@ -131,6 +131,61 @@ C_FUNC ctxt_mult_by_constant(void **result, void *ctxt, void *ptxt_ZZ) {
     return S_OK;
 }
 
+// Arithmetic with ZZX constants
+
+C_FUNC ctxt_add_by_packed_constant(void **result, void *ctxt, void *ptxt_ZZX) {
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+    NTL::ZZX *ptxt_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_, E_POINTER);
+    IfNullRet(result, E_POINTER);
+    *result = new helib::Ctxt(*ctxt_);
+    helib::Ctxt *result_ = FromVoid<helib::Ctxt>(*result);
+    IfNullRet(result_, E_POINTER);
+    result_->addConstant(*ptxt_);
+    return S_OK;
+}
+
+C_FUNC ctxt_sub_by_packed_constant(void **result, void *ctxt, void *ptxt_ZZX) {
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+    NTL::ZZX *ptxt_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_, E_POINTER);
+    IfNullRet(result, E_POINTER);
+    *result = new helib::Ctxt(*ctxt_);
+    helib::Ctxt *result_ = FromVoid<helib::Ctxt>(*result);
+    IfNullRet(result_, E_POINTER);
+    result_->addConstant(-*ptxt_);
+    return S_OK;
+}
+
+C_FUNC ctxt_sub_from_packed_constant(void **result, void *ptxt_ZZX, void *ctxt) {
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+    NTL::ZZX *ptxt_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_, E_POINTER);
+    IfNullRet(result, E_POINTER);
+    *result = new helib::Ctxt(*ctxt_);
+    helib::Ctxt *result_ = FromVoid<helib::Ctxt>(*result);
+    IfNullRet(result_, E_POINTER);
+    result_->negate();
+    result_->addConstant(*ptxt_);
+    return S_OK;
+}
+
+C_FUNC ctxt_mult_by_packed_constant(void **result, void *ctxt, void *ptxt_ZZX) {
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+    NTL::ZZX *ptxt_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_, E_POINTER);
+    IfNullRet(result, E_POINTER);
+    *result = new helib::Ctxt(*ctxt_);
+    helib::Ctxt *result_ = FromVoid<helib::Ctxt>(*result);
+    IfNullRet(result_, E_POINTER);
+    result_->multByConstant(*ptxt_);
+    return S_OK;
+}
+
 // Arithmetic in place
 
 C_FUNC ctxt_add_inplace(void *ctxt1, void *ctxt2) {
