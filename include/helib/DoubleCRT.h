@@ -340,6 +340,13 @@ public:
     return *this;
   }
 
+  //! Apply the galois automorphism for power of 2 rings
+  void power_of_two_galois_automorph(size_t galois_elt);
+  //! Translates a step into a galois_elt
+  size_t power_of_two_get_elt_from_step(int32_t step);
+  //! Rotates the ciphertext. step = 0 implies rotating columns
+  void power_of_two_rotate(int32_t step);
+
   //! Compute the complex conjugate, the same as automorph(m-1)
   void complexConj();
   ///@}

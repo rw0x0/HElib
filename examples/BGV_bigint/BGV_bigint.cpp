@@ -199,11 +199,11 @@ int main(int argc, char* argv[])
   // Plaintext prime modulus
   NTL::ZZ p = NTL::to_ZZ("21888242871839275222246405745257275088548364400416034343698204186575808495617");
   // Cyclotomic polynomial - defines phi(m)
-  unsigned long m = 32109;
+  unsigned long m = 16384 * 4;
   // Hensel lifting (default = 1)
   unsigned long r = 1;
   // Number of bits of the modulus chain
-  unsigned long bits = 700;
+  unsigned long bits = 800;
   // Number of columns of Key-Switching matrix (default = 2 or 3)
   unsigned long c = 2;
 
