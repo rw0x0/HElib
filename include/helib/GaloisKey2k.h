@@ -34,8 +34,6 @@ class GaloisKey2k {
 
     //! Apply the galois automorphism to a ciphertext, where step=0 implys rotate columsn
     void rotate(Ctxt& ctxt, int32_t step);
-
-
 };
 
 } // namespace helib
