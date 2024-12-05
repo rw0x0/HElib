@@ -260,3 +260,42 @@ C_FUNC ctxt_mult_by_constant_inplace(void *ctxt, void *ptxt_ZZ) {
     ctxt_->multByConstant(*ptxt_);
     return S_OK;
 }
+
+// Arithmetic with ZZX constants in place
+
+C_FUNC ctxt_add_by_packed_constant_inplace(void *ctxt, void *ptxt_ZZX) {
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+    NTL::ZZX *ptxt_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_, E_POINTER);
+    ctxt_->addConstant(*ptxt_);
+    return S_OK;
+}
+
+C_FUNC ctxt_sub_by_packed_constant_inplace(void *ctxt, void *ptxt_ZZX) {
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+    NTL::ZZX *ptxt_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_, E_POINTER);
+    ctxt_->addConstant(-*ptxt_);
+    return S_OK;
+}
+
+C_FUNC ctxt_sub_from_packed_constant_inplace(void *ctxt, void *ptxt_ZZX) {
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+    NTL::ZZX *ptxt_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_, E_POINTER);
+    ctxt_->negate();
+    ctxt_->addConstant(*ptxt_);
+    return S_OK;
+}
+
+C_FUNC ctxt_mult_by_packed_constant_inplace(void *ctxt, void *ptxt_ZZX) {
+    helib::Ctxt *ctxt_ = FromVoid<helib::Ctxt>(ctxt);
+    IfNullRet(ctxt_, E_POINTER);
+    NTL::ZZX *ptxt_ = FromVoid<NTL::ZZX>(ptxt_ZZX);
+    IfNullRet(ptxt_, E_POINTER);
+    ctxt_->multByConstant(*ptxt_);
+    return S_OK;
+}
