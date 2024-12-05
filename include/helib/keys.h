@@ -309,6 +309,8 @@ public:
   void hackPtxtSpace(long p2r) { pubEncrKey.ptxtSpace = p2r; }
 };
 
+class GaloisKey2k; // Forward declaration
+
 /**
  * @class SecKey
  * @brief The secret key
@@ -317,6 +319,7 @@ class SecKey : public PubKey
 { // The secret key
 private:
   friend class KeySwitch;
+  friend class GaloisKey2k;
   std::vector<DoubleCRT> sKeys; // The secret key(s) themselves
   explicit SecKey(const PubKey& pk);
 

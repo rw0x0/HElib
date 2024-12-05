@@ -140,6 +140,7 @@ set(HELIB_SRCS
     "c_ntl_ZZX.cpp"
     "c_pubkey.cpp"
     "c_seckey.cpp"
+    "GaloisKey2k.cpp"
     )
 
 set(HELIB_HEADERS
@@ -210,6 +211,7 @@ set(HELIB_HEADERS
     "${HELIB_HEADER_DIR}/c_ntl_ZZX.h"
     "${HELIB_HEADER_DIR}/c_pubkey.h"
     "${HELIB_HEADER_DIR}/c_seckey.h"
+    "${HELIB_HEADER_DIR}/GaloisKey2k.h"
     )
 
 set(HELIB_PRIVATE_HEADERS
