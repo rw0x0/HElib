@@ -394,11 +394,14 @@ const ZeroCtxtLike_type ZeroCtxtLike = ZeroCtxtLike_type();
  * by key-switching with some added factor.
  *
  **/
+
+class GaloisKey2k; // forward declaration
 class Ctxt
 {
   friend class PubKey;
   friend class SecKey;
   friend class BasicAutomorphPrecon;
+  friend class GaloisKey2k;
 
   const Context& context;      // points to the parameters of this FHE instance
   const PubKey& pubKey;        // points to the public encryption key;

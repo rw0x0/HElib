@@ -10,6 +10,12 @@ class GaloisKey2k {
     size_t m;
     std::map<size_t, KeySwitch> keys;
 
+    //! Translates a step into a galois_elt
+    size_t get_elt_from_step(int32_t step);
+
+    //! The actual key switch after the automorphism
+    void key_switch(Ctxt& ctxt, size_t galois_elt);
+
   public:
     GaloisKey2k(size_t m) : m(m) {
       if (m == 0 ||  (m & (m - 1)) != 0) { // check if power of 2
@@ -25,8 +31,6 @@ class GaloisKey2k {
 
     //! Generate a key-switching matrix for a given step
     void generate_step(const SecKey& sKey, int32_t step);
-    //! Translates a step into a galois_elt
-    size_t get_elt_from_step(int32_t step);
 
 
 };

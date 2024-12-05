@@ -85,4 +85,46 @@ void GaloisKey2k::generate_step(const SecKey& sKey, int32_t step) {
   keys[galois_elt] = ksMatrix;
 }
 
+void GaloisKey2k::key_switch(Ctxt& ctxt, size_t galois_elt) {
+  auto it = keys.find(galois_elt);
+  if (it == keys.end()) {
+    throw RuntimeError("GaloisKey2k::key_switch: Key-switching matrix not found");
+  }
+  auto& ksMatrix = it->second;
+
+  ctxt.dropSmallAndSpecialPrimes();
+
+  auto g = ctxt.ptxtSpace;
+  double logProd = ctxt.context.logOfProduct(ctxt.context.getSpecialPrimes());
+
+  Ctxt tmp(ctxt.pubKey, g); // an empty ciphertext, same plaintext space
+  tmp.intFactor = ctxt.intFactor;   // same intFactor, too
+  tmp.ptxtMag = ctxt.ptxtMag;       // same CKKS plaintext size
+  tmp.noiseBound = ctxt.noiseBound * NTL::xexp(logProd); // The noise after mod-up
+
+  tmp.primeSet = ctxt.primeSet | ctxt.context.getSpecialPrimes();
+  // VJS-NOTE: added this to make addPart work
+
+  tmp.ratFactor = ctxt.ratFactor * NTL::xexp(logProd); // CKKS factor after mod-up
+  // std::cerr << "=== " << ratFactor << tmp.ratFactor << "\n";
+
+  for (CtxtPart& part : ctxt.parts) {
+    // For a part relative to 1 or base,  only scale and add
+    if (part.skHandle.isOne()) {
+      part.addPrimesAndScale(ctxt.context.getSpecialPrimes());
+      tmp.addPart(part, /*matchPrimeSet=*/true);
+      continue;
+    }
+
+    if (g > 1) { // g==1 for CKKS, g>1 for BGV
+      NTL::ZZ ptxt_space = ksMatrix.ptxtSpace;
+      tmp.reducePtxtSpace(ptxt_space);
+      g = tmp.ptxtSpace;
+      // VJS-NOTE: fixes a bug where intFactor was not corrected
+    }
+    tmp.keySwitchPart(part, ksMatrix); // switch this part & update noiseBound
+  }
+  ctxt = tmp;
+}
+
 } // namespace helib
