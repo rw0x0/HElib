@@ -32,7 +32,7 @@ class GaloisKey2k {
     //! Generate a key-switching matrix for a given step
     void generate_step(const SecKey& sKey, int32_t step);
 
-    //! Apply the galois automorphism to a ciphertext, where step=0 implys rotate columsn
+    //! Apply the galois automorphism to a ciphertext, where step=0 implys rotate columns
     void rotate(Ctxt& ctxt, int32_t step);
 };
 

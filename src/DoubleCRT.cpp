@@ -1244,41 +1244,6 @@ size_t ilog2(size_t n) {
   return log;
 }
 
-void DoubleCRT::power_of_two_galois_automorph(size_t galois_elt) {
-  size_t m = context.getZMStar().getM();
-  if (m == 0 ||  (m & (m - 1)) != 0 // check if power of 2
-             || galois_elt >= m
-             || galois_elt & 1 != 1) {
-    throw RuntimeError("DoubleCRT::power_of_two_galois_automorph: Wrong configuration");
-  }
-
-  size_t n = m >> 1;
-  size_t log2n = ilog2(n);
-  std::vector<long> tmp(n); // temporary array of size n
-  const IndexSet& s = map.getIndexSet();
-
-  // go over the rows, permute them one at a time
-  for (long i : s) {
-    size_t pi = context.ithPrime(i);
-
-    size_t index_raw = 0;
-    NTL::vec_long& row = map[i];
-    for (auto &val : row) {
-        auto index = index_raw % n;
-        if ((index_raw >> log2n) & 1 == 0 || val == 0) {
-            tmp[index] = val;
-        } else {
-            tmp[index] = pi - val;
-        }
-        index_raw *= galois_elt;
-    }
-    // Copy back
-    for (auto i : range(n)) {
-        row[i] = tmp[i];
-    }
-  }
-}
-
 // Compute the complex conjugate, this is the same as automorph(m-1)
 void DoubleCRT::complexConj()
 {

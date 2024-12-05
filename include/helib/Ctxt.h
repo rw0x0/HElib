@@ -85,6 +85,7 @@ class SKHandle
 
 public:
   friend class Ctxt;
+  friend class GaloisKey2k;
 
   SKHandle(long newPowerOfS = 0, long newPowerOfX = 1, long newSecretKeyID = 0)
   {

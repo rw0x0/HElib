@@ -11,16 +11,15 @@ size_t GaloisKey2k::get_elt_from_step(int32_t step) {
   }
 
   bool sign = step < 0;
-  size_t step_abs = sign ? -step : step;
+  int32_t step_abs = sign ? -step : step;
   if (step_abs >= row_size) {
     throw RuntimeError("DoubleCRT::power_of_two_galois_automorph: Step count too large");
   }
   size_t step_ = sign ? row_size - step_abs : step_abs;
 
-  size_t gen = GENERATOR;
   size_t galois_elt = 1;
   for (size_t i = 0; i < step_; i++) {
-    galois_elt = (galois_elt * gen) % m;
+    galois_elt = (galois_elt * GENERATOR) % m;
   }
   return galois_elt;
 }
@@ -39,7 +38,7 @@ void GaloisKey2k::generate_step(const SecKey& sKey, int32_t step) {
   }
   auto p = context.getP();
 
-  KeySwitch ksMatrix(1, galois_elt, 0, 0);
+  KeySwitch ksMatrix(1, galois_elt, 0, 0, p);
   RandomBits(ksMatrix.prgSeed, 256); // a random 256-bit seed
 
   long n = context.getDigits().size();
@@ -61,12 +60,8 @@ void GaloisKey2k::generate_step(const SecKey& sKey, int32_t step) {
       a[i].randomize();
   } // restore state upon destruction of state
 
-  // Record the plaintext space for this key-switching matrix
-  ksMatrix.ptxtSpace = p;
-
-
   DoubleCRT fromKey = sKey.sKeys.at(0);    // copy object, not a reference
-  fromKey.power_of_two_galois_automorph(galois_elt);
+  fromKey.automorph(galois_elt);
   const DoubleCRT& toKey = sKey.sKeys.at(0); // this can be a reference
 
   // generate the RLWE instances with pseudorandom ai's
@@ -93,7 +88,7 @@ void GaloisKey2k::key_switch(Ctxt& ctxt, size_t galois_elt) {
   if (it == keys.end()) {
     throw RuntimeError("GaloisKey2k::key_switch: Key-switching matrix not found");
   }
-  auto& ksMatrix = it->second;
+  const KeySwitch& ksMatrix = it->second;
 
   ctxt.dropSmallAndSpecialPrimes();
 
@@ -113,7 +108,7 @@ void GaloisKey2k::key_switch(Ctxt& ctxt, size_t galois_elt) {
 
   for (CtxtPart& part : ctxt.parts) {
     // For a part relative to 1 or base,  only scale and add
-    if (part.skHandle.isOne()) {
+    if (part.skHandle.isOne() || part.skHandle.isBase(0)) {
       part.addPrimesAndScale(ctxt.context.getSpecialPrimes());
       tmp.addPart(part, /*matchPrimeSet=*/true);
       continue;
@@ -136,8 +131,11 @@ void GaloisKey2k::rotate(Ctxt& ctxt, int32_t step) {
   }
 
   size_t galois_elt = get_elt_from_step(step);
-  for (auto& part : ctxt.parts) {
-    part.power_of_two_galois_automorph(galois_elt);
+  for (CtxtPart& part : ctxt.parts) {
+    part.automorph(galois_elt);
+    if (!part.skHandle.isOne()) {
+        part.skHandle.powerOfX = galois_elt;
+    }
   }
 
   key_switch(ctxt, galois_elt);

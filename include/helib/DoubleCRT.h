@@ -340,9 +340,6 @@ public:
     return *this;
   }
 
-  //! Apply the galois automorphism for power of 2 rings
-  void power_of_two_galois_automorph(size_t galois_elt);
-
   //! Compute the complex conjugate, the same as automorph(m-1)
   void complexConj();
   ///@}
