@@ -32,7 +32,6 @@ void GaloisKey2k::generate_step(const SecKey& sKey, int32_t step) {
     return;
   }
 
-
   const Context& context = sKey.getContext();
   auto m = context.getZMStar().getM();
   if (m != this->m) {
@@ -86,6 +85,10 @@ void GaloisKey2k::generate_step(const SecKey& sKey, int32_t step) {
 }
 
 void GaloisKey2k::key_switch(Ctxt& ctxt, size_t galois_elt) {
+  if (ctxt.context.getZMStar().getM() != m) {
+    throw RuntimeError("GaloisKey2k::key_switch: Mismatched context");
+  }
+
   auto it = keys.find(galois_elt);
   if (it == keys.end()) {
     throw RuntimeError("GaloisKey2k::key_switch: Key-switching matrix not found");
@@ -125,6 +128,19 @@ void GaloisKey2k::key_switch(Ctxt& ctxt, size_t galois_elt) {
     tmp.keySwitchPart(part, ksMatrix); // switch this part & update noiseBound
   }
   ctxt = tmp;
+}
+
+void GaloisKey2k::rotate(Ctxt& ctxt, int32_t step) {
+  if (ctxt.context.getZMStar().getM() != m) {
+    throw RuntimeError("GaloisKey2k::key_switch: Mismatched context");
+  }
+
+  size_t galois_elt = get_elt_from_step(step);
+  for (auto& part : ctxt.parts) {
+    part.power_of_two_galois_automorph(galois_elt);
+  }
+
+  key_switch(ctxt, galois_elt);
 }
 
 } // namespace helib
